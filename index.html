@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Lumikit Steam Deck Control</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>🎮 Lumikit Steam Deck Control</h1>
+      <div id="status" class="status disconnected">Desconectado</div>
+    </div>
+
+    <!-- Seção de Hosts -->
+    <div class="section">
+      <h2>Conectar Host</h2>
+      <div class="host-buttons">
+        <button class="host-btn" data-host="favela">
+          <div class="host-name">PC Favela Rodrigo</div>
+          <div class="host-address" id="favela-address">pcfavelarodrigo:5000</div>
+        </button>
+        
+        <button class="host-btn" data-host="maria">
+          <div class="host-name">PC Maria Rodrigo</div>
+          <div class="host-address" id="maria-address">pcmariarodrigo:5000</div>
+        </button>
+      </div>
+      
+      <div class="connection-actions">
+        <button id="disconnect-btn" disabled>Desconectar</button>
+        <button id="test-connection-btn" disabled>Testar Conexão</button>
+      </div>
+    </div>
+
+    <!-- Informações de Conexão -->
+    <div id="connection-info" class="connection-info hidden">
+      <h3>✅ Conectado com: <span id="connected-host"></span></h3>
+      <p>Teclas F1-F12 ativas e suprimidas do sistema</p>
+    </div>
+
+    <!-- Configurações -->
+    <div class="section">
+      <h2>Configurações</h2>
+      
+      <!-- Configuração de Hosts -->
+      <div class="config-group">
+        <h3>Endereços dos Hosts</h3>
+        <div id="host-config"></div>
+      </div>
+
+      <!-- Configuração de Teclas -->
+      <div class="config-group">
+        <h3>Mapeamento de Teclas</h3>
+        <p class="config-description">
+          Configure qual página (1-10) e cena (1-16) cada tecla F1-F12 irá ativar:
+        </p>
+        <div id="key-config"></div>
+      </div>
+
+      <div class="config-actions">
+        <button id="save-config" class="save-btn">Salvar Configurações</button>
+        <button id="reset-config" class="reset-btn">Restaurar Padrão</button>
+      </div>
+    </div>
+
+    <!-- Status das Teclas -->
+    <div class="section">
+      <h2>Status das Teclas</h2>
+      <div class="key-status">
+        <div class="key-grid" id="key-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

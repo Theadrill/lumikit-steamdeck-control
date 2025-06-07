@@ -1,0 +1,116 @@
+{
+  "hosts": {
+    "favela": {
+      "name": "PC Favela Rodrigo",
+      "address": "pcfavelarodrigo",
+      "port": 5000
+    },
+    "maria": {
+      "name": "PC Maria Rodrigo",
+      "address": "pcmariarodrigo",
+      "port": 5000
+    }
+  },
+  "keyMappings": {
+    "favela": {
+      "F1": {
+        "page": 0,
+        "scene": 3
+      },
+      "F2": {
+        "page": 0,
+        "scene": 8
+      },
+      "F3": {
+        "page": 0,
+        "scene": 7
+      },
+      "F4": {
+        "page": 0,
+        "scene": 0
+      },
+      "F5": {
+        "page": 0,
+        "scene": 12
+      },
+      "F6": {
+        "page": 0,
+        "scene": 7
+      },
+      "F7": {
+        "page": 0,
+        "scene": 14
+      },
+      "F8": {
+        "page": 0,
+        "scene": 0
+      },
+      "F9": {
+        "page": 0,
+        "scene": 8
+      },
+      "F10": {
+        "page": 0,
+        "scene": 9
+      },
+      "F11": {
+        "page": 0,
+        "scene": 10
+      },
+      "F12": {
+        "page": 0,
+        "scene": 11
+      }
+    },
+    "maria": {
+      "F1": {
+        "page": 0,
+        "scene": 15
+      },
+      "F2": {
+        "page": 0,
+        "scene": 14
+      },
+      "F3": {
+        "page": 0,
+        "scene": 8
+      },
+      "F4": {
+        "page": 0,
+        "scene": 7
+      },
+      "F5": {
+        "page": 0,
+        "scene": 13
+      },
+      "F6": {
+        "page": 0,
+        "scene": 5
+      },
+      "F7": {
+        "page": 0,
+        "scene": 6
+      },
+      "F8": {
+        "page": 0,
+        "scene": 0
+      },
+      "F9": {
+        "page": 0,
+        "scene": 8
+      },
+      "F10": {
+        "page": 0,
+        "scene": 9
+      },
+      "F11": {
+        "page": 0,
+        "scene": 10
+      },
+      "F12": {
+        "page": 0,
+        "scene": 11
+      }
+    }
+  }
+}
