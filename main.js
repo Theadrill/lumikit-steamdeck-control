@@ -1,426 +1,443 @@
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain } = require("electron")
-const { GlobalKeyboardListener } = require("node-global-key-listener")
+// main.js
+
+// Módulos do Electron e outras dependências
+// ✅ CORREÇÃO 1: Adicionado 'globalShortcut' e REMOVIDA a dependência 'node-global-key-listener'
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, globalShortcut } = require("electron") 
 const http = require("http")
 const path = require("path")
-const fs = require("fs").promises
+const fsp = require("fs").promises
+const os = require("os");
+const dns = require("dns"); 
+const { exec } = require("child_process"); 
 
-// CORREÇÃO: Caminho seguro para produção
+// Determina o Sistema Operacional
+const isWindows = os.platform() === "win32";
+const isLinux = os.platform() === "linux";
+
+// Define o caminho seguro para salvar a configuração
 const userDataPath = app.getPath("userData")
 const configPath = path.join(userDataPath, "config.json")
 
-console.log(`📁 Caminho do config.json: ${configPath}`)
-
+// Variáveis de estado global
 let config = null
 let mainWindow = null
 let tray = null
 let currentHost = null
 let connectionStatus = "disconnected"
 let isQuitting = false
-let keyboardListener = null
+let resolvedHostCache = {}; // CACHE PARA ARMAZENAR IPs RESOLVIDOS
+
+// IPC para retornar SO atual para a interface (renderer)
+ipcMain.handle("get-os", () => (isWindows ? "windows" : isLinux ? "linux" : "outro"));
 
 // Configuração padrão
 const defaultConfig = {
     hosts: {
-        favela: {
-            name: "PC Favela Rodrigo",
-            address: "pcfavelarodrigo",
-            port: 5000,
-        },
-        maria: {
-            name: "PC Maria Rodrigo",
-            address: "pcmariarodrigo",
-            port: 5000,
-        },
+        favela: { name: "PC Favela Rodrigo", address: "pcrodrigoxeon", port: 5000 },
+        maria: { name: "PC Maria Rodrigo", address: "pcmariarodrigo", port: 5000 },
     },
-    keyMappings: {
-        favela: {},
-        maria: {},
-    },
+    keyMappings: { favela: {}, maria: {} }, 
 }
 
-// Gera mapeamento padrão de teclas
+// Inicializa o mapeamento padrão F1-F12 (0-based)
 for (let i = 1; i <= 12; i++) {
     defaultConfig.keyMappings.favela[`F${i}`] = { page: 0, scene: i - 1 }
     defaultConfig.keyMappings.maria[`F${i}`] = { page: 1, scene: i - 1 }
 }
 
-// Carrega configuração do arquivo
+/**
+ * @description Carrega a configuração do disco e faz a fusão com a configuração padrão
+ */
 async function loadConfig() {
-    try {
-        const data = await fs.readFile(configPath, "utf-8")
-        const loadedConfig = JSON.parse(data)
-        console.log("✅ Configuração carregada:", configPath)
-        return loadedConfig
-    } catch (error) {
-        console.log("⚠️ Criando configuração padrão...")
-        console.log(`❌ Erro: ${error.message}`)
+    let loadedConfig = {}; 
+    let configLoadedFromFile = false;
 
-        // Cria diretório se não existir
-        await fs.mkdir(userDataPath, { recursive: true })
-        return defaultConfig
+    try {
+        const data = await fsp.readFile(configPath, "utf-8")
+        loadedConfig = JSON.parse(data)
+        configLoadedFromFile = true;
+    } catch (error) {
+        console.warn("⚠️ Arquivo config.json não encontrado ou inválido. Usando defaults.");
     }
+    
+    // ✅ CORREÇÃO AQUI: Garante que os mapeamentos são fundidos de forma profunda
+    const finalConfig = {
+        ...defaultConfig,
+        hosts: Object.assign({}, defaultConfig.hosts, loadedConfig.hosts),
+        keyMappings: Object.keys(defaultConfig.keyMappings).reduce((acc, hostKey) => {
+            // Para cada host, funde o default F1-F12 com o que foi carregado do disco
+            const loadedHostMapping = loadedConfig.keyMappings ? loadedConfig.keyMappings[hostKey] || {} : {};
+            acc[hostKey] = Object.assign({}, defaultConfig.keyMappings[hostKey], loadedHostMapping);
+            return acc;
+        }, {}),
+    };
+    
+    if (!configLoadedFromFile) {
+        try {
+            await fsp.mkdir(userDataPath, { recursive: true })
+            await saveConfig(finalConfig);
+        } catch (saveError) {
+             console.error("❌ Erro ao salvar config padrão:", saveError.message);
+        }
+    }
+
+    return finalConfig;
 }
 
+
+// Salva configuração
 async function saveConfig(newConfig) {
     try {
-        // DEBUG: Log do conteúdo
-        console.log(`💾 Salvando configuração: ${JSON.stringify(newConfig, null, 2)}`)
-
-        await fs.writeFile(configPath, JSON.stringify(newConfig, null, 2))
-        console.log("✅ Configuração salva em:", configPath)
+        await fsp.writeFile(configPath, JSON.stringify(newConfig, null, 2))
         return true
     } catch (error) {
         console.error("❌ ERRO AO SALVAR CONFIGURAÇÃO:", error)
-        console.error(`❗ Caminho: ${configPath}`)
-        console.error(`❗ Erro: ${error.message}`)
         return false
     }
 }
 
-// Testa conexão com host
-async function testConnection(hostKey) {
-    if (!config.hosts[hostKey]) return false
+// Funções de resolução DNS com cache
+async function resolveHostAddress(hostname) {
+    if (resolvedHostCache[hostname]) {
+        return resolvedHostCache[hostname];
+    }
+    
+    return new Promise((resolve) => {
+        dns.lookup(hostname, { family: 4 }, (err, address, family) => {
+            if (err) {
+                console.error(`❌ ERRO na resolução DNS para ${hostname}:`, err.code);
+                return resolve(null);
+            }
+            resolvedHostCache[hostname] = address;
+            resolve(address);
+        });
+    });
+}
 
-    const host = config.hosts[hostKey]
+
+// Testa conexão
+async function testConnection(hostKey) {
+    if (!config || !config.hosts || !config.hosts[hostKey]) return false;
+
+    const host = config.hosts[hostKey];
+    const ipAddress = await resolveHostAddress(host.address);
+    if (!ipAddress) return false;
+
     return new Promise((resolve) => {
         const req = http.request(
-            {
-                hostname: host.address,
-                port: host.port,
-                path: "/",
-                method: "HEAD",
+            { 
+                hostname: ipAddress, 
+                port: host.port, 
+                path: "/", 
+                method: "HEAD", 
                 timeout: 3000,
             },
-            (res) => {
-                console.log(`✅ ${host.name} conectado - Status: ${res.statusCode}`)
-                resolve(true)
-            }
+            (res) => resolve(true)
         )
-
         req.on("error", (err) => {
-            console.log(`❌ ${host.name} falhou: ${err.message}`)
-            resolve(false)
+            delete resolvedHostCache[host.address]; 
+            resolve(false);
         })
-
-        req.on("timeout", () => {
-            console.log(`⏱️ ${host.name} timeout`)
-            req.destroy()
-            resolve(false)
+        req.on("timeout", () => { 
+            req.destroy(); 
+            delete resolvedHostCache[host.address];
+            resolve(false); 
         })
-
         req.end()
     })
 }
 
-// Envia comando para trocar cena
-function changeScene(page, scene) {
-    if (!currentHost || !config.hosts[currentHost]) return
+// Envia comando HTTP GET (0-based)
+async function changeScene(page, scene) {
+    if (!config || !currentHost || !config.hosts[currentHost]) return
 
     const host = config.hosts[currentHost]
+    const ipAddress = await resolveHostAddress(host.address);
+    if (!ipAddress) return;
+
     const options = {
-        hostname: host.address,
+        hostname: ipAddress,
         port: host.port,
-        path: `/services/edmx_change_scene/${page}/${scene}`,
+        path: `/services/edmx_change_scene/${page}/${scene}`, // 0-based no backend
         method: "GET",
         timeout: 2000,
     }
 
-    console.log(`🎮 Enviando: ${host.address}:${host.port}/services/edmx_change_scene/${page}/${scene}`)
-
-    const req = http.request(options, (res) => {
-        console.log(`✅ Página ${page + 1}, Cena ${scene + 1} ativada`)
-        updateConnectionStatus("connected")
-    })
-
+    const req = http.request(options, (res) => updateConnectionStatus("connected"))
+    
     req.on("error", (err) => {
-        console.error("❌ Erro na cena:", err.message)
-        updateConnectionStatus("error")
+        updateConnectionStatus("error");
     })
-
-    req.on("timeout", () => {
-        console.log("⏱️ Timeout na cena")
-        req.destroy()
-        updateConnectionStatus("timeout")
+    req.on("timeout", () => { 
+        req.destroy(); 
+        updateConnectionStatus("timeout"); 
     })
-
     req.end()
 }
 
-// Atualiza status de conexão
+// Atualiza status e envia para o frontend
 function updateConnectionStatus(status) {
     connectionStatus = status
     if (mainWindow && !mainWindow.isDestroyed()) {
+        const hostName = currentHost && config && config.hosts[currentHost] ? config.hosts[currentHost].name : null;
         mainWindow.webContents.send("connection-status-update", {
             status: connectionStatus,
             host: currentHost,
-            hostName: currentHost ? config.hosts[currentHost].name : null,
+            hostName: hostName,
+            config: config 
         })
     }
     updateTrayMenu()
 }
 
-// ===== LISTENER GLOBAL DE TECLADO (NOVA ABORDAGEM) =====
+// Listener Global de Teclado (F1-F12)
+// ✅ CORREÇÃO 2: Usa o módulo globalShortcut do Electron para interceptar e bloquear teclas
 function registerGlobalKeyboardListener() {
-    if (keyboardListener) return
-
+    // 💡 Ação: Usamos globalShortcut para interceptar teclas no nível do SO
+    
+    // 1. Teclas de função (F1-F12)
+    const functionKeys = [
+        'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 
+        'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
+    ];
+    
     try {
-        keyboardListener = new GlobalKeyboardListener({
-            windows: {
-                onError: (errorCode) => console.error("Keyboard Error: " + errorCode),
-                onInfo: (info) => console.info("Keyboard Info: " + info),
-            },
-        })
-
-        keyboardListener.addListener((e, down) => {
-            // Só processa teclas F1-F12 quando pressionadas (DOWN)
-            if (e.state === "DOWN" && currentHost && config.keyMappings[currentHost]) {
-                const keyMap = config.keyMappings[currentHost]
-
-                // Verifica se é uma tecla F1-F12
-                if (e.name.match(/^F(1[0-2]|[1-9])$/)) {
-                    const mapping = keyMap[e.name]
+        // Itera sobre as teclas F para registrar e bloquear/executar ação
+        functionKeys.forEach(key => {
+            const success = globalShortcut.register(key, () => {
+                // Lógica de Ação: Executa a função mapeada se estiver conectado
+                if (currentHost && config && config.keyMappings[currentHost]) { 
+                    const keyMap = config.keyMappings[currentHost];
+                    const mapping = keyMap[key];
+                    
                     if (mapping) {
-                        const { page, scene } = mapping
-                        console.log(`⌨️ ${e.name} → Página ${page + 1}, Cena ${scene + 1}`)
-                        changeScene(page, scene)
-                        return true // Suprime a tecla F (opcional)
+                        changeScene(mapping.page, mapping.scene); // Ação Principal
+                        
+                        if (mapping.command) {
+                            runCommand(mapping.command); // Comando Opcional
+                        }
                     }
                 }
+                // O simples fato da função ser executada aqui já BLOQUEIA a propagação do evento no OS.
+                console.log(`Atalho global ${key} capturado e bloqueado.`);
+            });
+            
+            if (!success) {
+                console.error(`❌ Falha ao registrar o atalho global ${key}`);
             }
-            return false // Não suprime outras teclas
-        })
+        });
 
-        console.log("⌨️ Global keyboard listener registrado")
+        // 2. Bloqueia atalhos comuns (Ctrl+R, F5, etc.) que você quer anular sempre.
+        const shortcutsToBlock = ['CommandOrControl+R', 'F5'];
+        shortcutsToBlock.forEach(key => {
+             globalShortcut.register(key, () => {
+                console.log(`Atalho de sistema ${key} bloqueado.`);
+            });
+        });
+        
     } catch (error) {
-        console.error("❌ Erro ao registrar keyboard listener:", error)
+        console.error("❌ Erro ao registrar globalShortcut:", error.message);
     }
 }
 
-// Para listener de teclado
+// ✅ CORREÇÃO 3: Desregistra todos os atalhos
 function stopGlobalKeyboardListener() {
-    if (keyboardListener) {
-        try {
-            keyboardListener.kill()
-            keyboardListener = null
-            console.log("⌨️ Global keyboard listener parado")
-        } catch (error) {
-            console.error("❌ Erro ao parar keyboard listener:", error)
-        }
-    }
+    globalShortcut.unregisterAll(); 
+    console.log("Atalhos globais desregistrados.");
 }
+
+// Função para executar comando externo 
+function runCommand(command) {
+    const adapted = isWindows ? command : command.replace(/\\.bat/g, ".sh");
+    exec(adapted, { cwd: __dirname }, (error, stdout, stderr) => {
+        if (error) {
+            dialog.showErrorBox("Erro", `Falha ao executar: ${error.message}`); 
+            return;
+        }
+    });
+}
+
 
 // Cria janela principal
 function createMainWindow() {
     mainWindow = new BrowserWindow({
         width: 800,
         height: 700,
-        show: false,
-        skipTaskbar: true,
+        // ✅ CORREÇÃO 4: Inicia a janela visível
+        show: true, 
+        // ✅ CORREÇÃO 5: Garante que a janela apareça na barra de tarefas (Dock)
+        skipTaskbar: false, 
         resizable: false,
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false,
+            contextIsolation: false, 
         },
-        icon: path.join(__dirname, "icon.ico"),
+        icon: path.join(__dirname, isWindows ? "icon.ico" : "icon.png"),
     })
 
     mainWindow.loadFile("index.html")
     mainWindow.setMenuBarVisibility(false)
 
     mainWindow.on("close", (event) => {
+        // Mantém a lógica de esconder, não fechar
         if (!isQuitting) {
             event.preventDefault()
-            mainWindow.hide()
+            mainWindow.hide() 
         }
     })
-
-    mainWindow.webContents.on("did-finish-load", () => {
-        console.log("🚀 Interface carregada")
-    })
+    
+    // ✅ ADIÇÃO: Força a janela a aparecer (Segurança)
+    mainWindow.show();
 }
 
-// Cria tray
+// Cria Tray
 function createTray() {
     try {
-        const iconPath = path.join(__dirname, "icon.ico")
-        const icon = nativeImage.createFromPath(iconPath)
-        tray = new Tray(icon.resize({ width: 16, height: 16 }))
-        updateTrayMenu()
-
+        const iconFile = isWindows ? "icon.ico" : "icon.png";
+        const iconPath = path.join(__dirname, iconFile);
+        let icon = nativeImage.createFromPath(iconPath);
+        if (isLinux) {
+            icon.setTemplateImage(true);
+        }
+        tray = isWindows ? new Tray(icon.resize({ width: 16, height: 16 })) : new Tray(icon);
         tray.on("click", () => {
             if (mainWindow.isVisible()) {
-                mainWindow.hide()
+                mainWindow.hide();
             } else {
-                mainWindow.show()
-                mainWindow.focus()
+                mainWindow.show();
+                mainWindow.focus();
             }
-        })
-
-        console.log("📌 Tray criado")
+        });
     } catch (error) {
-        console.error("❌ Erro ao criar tray:", error)
+        // Se a criação do Tray falhar (comum no Wayland), o aplicativo continua rodando
+        // e é acessível pela barra de tarefas (Taskbar), graças às correções acima.
+        console.error("❌ Erro ao criar tray. Continuando a execução.", error);
     }
 }
 
 // Atualiza menu do tray
 function updateTrayMenu() {
-    if (!tray) return
+    if (!tray || !config || !config.hosts || !config.hosts.favela || !config.hosts.maria) return; 
 
-    const statusText = currentHost ? `${config.hosts[currentHost].name} (${connectionStatus})` : "Não conectado"
+    const statusText = currentHost && config.hosts[currentHost]
+        ? `${config.hosts[currentHost].name} (${connectionStatus})`
+        : "Não conectado";
 
     const contextMenu = Menu.buildFromTemplate([
-        {
-            label: "Lumikit Steam Deck Control",
-            enabled: false,
-        },
+        { label: "Lumikit Steam Deck Control", enabled: false },
         { type: "separator" },
-        {
-            label: "Abrir Interface",
-            click: () => {
-                mainWindow.show()
-                mainWindow.focus()
-            },
-        },
-        {
-            label: `Status: ${statusText}`,
-            enabled: false,
-        },
+        { label: "Abrir Interface", click: () => { mainWindow.show(); mainWindow.focus(); } },
+        { label: `Status: ${statusText}`, enabled: false },
         { type: "separator" },
-        {
-            label: "Conectar Favela",
-            click: () => connectToHost("favela"),
-        },
-        {
-            label: "Conectar Maria",
-            click: () => connectToHost("maria"),
-        },
-        {
-            label: "Desconectar",
-            enabled: currentHost !== null,
-            click: () => {
-                currentHost = null
-                updateConnectionStatus("disconnected")
-            },
-        },
+        { label: `Conectar ${config.hosts.favela.name}`, click: () => connectToHost("favela") },
+        { label: `Conectar ${config.hosts.maria.name}`, click: () => connectToHost("maria") },
+        { label: "Desconectar", enabled: currentHost !== null, click: () => { currentHost = null; updateConnectionStatus("disconnected"); stopGlobalKeyboardListener(); } },
         { type: "separator" },
-        {
-            label: "Sair",
-            click: () => {
-                isQuitting = true
-                stopGlobalKeyboardListener()
-                app.quit()
-            },
-        },
-    ])
+        { label: "Sair", click: () => { isQuitting = true; stopGlobalKeyboardListener(); app.quit(); } },
+    ]);
 
-    tray.setContextMenu(contextMenu)
-    tray.setToolTip(`Lumikit Control - ${statusText}`)
+    tray.setContextMenu(contextMenu);
+    tray.setToolTip(`Lumikit Control - ${statusText}`);
 }
+
 
 // Conecta a um host
 async function connectToHost(hostKey) {
+    if (!config) {
+        updateConnectionStatus("error"); 
+        return { success: false, status: "error", host: null };
+    }
+
     updateConnectionStatus("connecting")
 
     const success = await testConnection(hostKey)
     if (success) {
         currentHost = hostKey
         updateConnectionStatus("connected")
-        registerGlobalKeyboardListener() // Registra listener global
+        registerGlobalKeyboardListener() 
     } else {
         updateConnectionStatus("error")
     }
+    return { success: success, status: connectionStatus, host: currentHost };
 }
 
+// ===================================
 // ===== IPC HANDLERS =====
-ipcMain.handle("get-config", async () => {
-    return config
-})
+// ===================================
 
+ipcMain.handle("get-config", async () => config);
 ipcMain.handle("save-config", async (event, newConfig) => {
     const success = await saveConfig(newConfig)
-    if (success) {
-        config = newConfig
-    }
+    if (success) config = newConfig;
     return { success }
-})
-
-ipcMain.handle("connect-host", async (event, hostKey) => {
-    await connectToHost(hostKey)
-    return {
-        success: connectionStatus === "connected",
-        status: connectionStatus,
-        host: currentHost,
-    }
-})
-
+});
+ipcMain.handle("connect-host", async (event, hostKey) => await connectToHost(hostKey));
 ipcMain.handle("disconnect-host", async () => {
     currentHost = null
-    stopGlobalKeyboardListener() // Para listener ao desconectar
+    stopGlobalKeyboardListener() 
     updateConnectionStatus("disconnected")
     return { success: true }
-})
+});
+ipcMain.handle("get-status", async () => ({
+    currentHost,
+    connectionStatus,
+    hostName: currentHost && config && config.hosts[currentHost] ? config.hosts[currentHost].name : null,
+}));
+ipcMain.handle("test-connection", async (event, hostKey) => await testConnection(hostKey));
 
-ipcMain.handle("get-status", async () => {
-    return {
-        currentHost,
-        connectionStatus,
-        hostName: currentHost ? config.hosts[currentHost].name : null,
-    }
-})
-
-ipcMain.handle("test-connection", async (event, hostKey) => {
-    const success = await testConnection(hostKey)
-    return { success }
-})
-
-// Novo handler para simular tecla F do gamepad
 ipcMain.handle("simulate-f-key", async (event, fKey) => {
-    if (!currentHost || !config.keyMappings[currentHost]) return { success: false }
-
-    const keyMap = config.keyMappings[currentHost]
-    if (keyMap[fKey]) {
-        const { page, scene } = keyMap[fKey]
-        console.log(`🎮 Gamepad simulou ${fKey} → Página ${page + 1}, Cena ${scene + 1}`)
-        changeScene(page, scene)
-        return { success: true }
+    if (!config || !currentHost || !config.keyMappings[currentHost] || !config.keyMappings[currentHost][fKey]) {
+        return { success: false }
     }
+    const mapping = config.keyMappings[currentHost][fKey];
+    const { page, scene, command } = mapping;
+    
+    await changeScene(page, scene); // 0-based
 
-    return { success: false }
-})
+    if (command) {
+        runCommand(command);
+    }
+    
+    return { success: true }
+});
+
+ipcMain.handle("run-command", async (event, command) => {
+    return new Promise((resolve, reject) => {
+        const adapted = isWindows ? command : command.replace(/\\.bat/g, ".sh");
+        exec(adapted, { cwd: __dirname }, (error, stdout, stderr) => {
+            if (error) {
+                dialog.showErrorBox("Erro", `Falha ao executar: ${error.message}`); 
+                return reject(stderr);
+            }
+            resolve(stdout);
+        });
+    });
+});
 
 // Inicialização
 app.whenReady().then(async () => {
-    config = await loadConfig()
-    createMainWindow()
-    createTray()
-
-    console.log("🚀 Aplicativo iniciado")
-    console.log("📁 Configuração em:", configPath)
+    config = await loadConfig() 
+    createMainWindow()          
+    createTray()                
+    updateTrayMenu()            
 })
 
 app.on("window-all-closed", () => {
-    if (!isQuitting) {
-        return
-    }
+    if (!isQuitting) return
     app.quit()
 })
 
 app.on("before-quit", () => {
     isQuitting = true
-    stopGlobalKeyboardListener()
-    if (tray) {
-        tray.destroy()
-    }
+    stopGlobalKeyboardListener() 
+    if (tray) tray.destroy()
 })
 
 app.on("will-quit", (event) => {
-    if (!isQuitting) {
-        event.preventDefault()
-    }
-    stopGlobalKeyboardListener()
+    if (!isQuitting) event.preventDefault()
+    stopGlobalKeyboardListener() 
 })
 
-// Previne múltiplas instâncias
 const gotTheLock = app.requestSingleInstanceLock()
 if (!gotTheLock) {
     app.quit()
@@ -434,11 +451,5 @@ if (!gotTheLock) {
     })
 }
 
-// Tratamento de erros
-process.on("uncaughtException", (error) => {
-    console.error("❌ Erro não capturado:", error)
-})
-
-process.on("unhandledRejection", (reason, promise) => {
-    console.error("❌ Promise rejeitada:", reason)
-})
+process.on("uncaughtException", (error) => console.error("❌ Erro não capturado:", error))
+process.on("unhandledRejection", (reason, promise) => console.error("❌ Promise rejeitada:", reason))

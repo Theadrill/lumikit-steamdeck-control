@@ -1,79 +1,126 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Lumikit Steam Deck Control</title>
-  <link rel="stylesheet" href="styles.css">
+    <meta charset="UTF-8">
+    <title>Lumikit Steam Deck Control</title>
+    <link rel="stylesheet" href="styles.css"> 
 </head>
 <body>
-  <div class="container">
-    <!-- Header -->
-    <div class="header">
-      <h1>🎮 Lumikit Steam Deck Control</h1>
-      <div id="status" class="status disconnected">Desconectado</div>
+    <div id="app-container">
+        <header>
+            <nav id="tabs" class="tabs">
+                <button class="tab-button active" data-tab="control-tab">Controle</button>
+                <button class="tab-button" data-tab="config-tab">Configuração</button>
+            </nav>
+        </header>
+
+        <div id="status-bar" class="status-disconnected status-bar">
+            <span id="os-info"></span>
+            <span id="connection-status-text">Desconectado</span>
+        </div>
+
+        <div id="tab-content" class="tab-content">
+            <div id="control-tab" class="tab-page active">
+                <h1 class="app-title">Lumikit Steam Deck Control</h1>
+
+                <div class="host-selection">
+                    <button class="host-btn" data-host="favela" id="connect-favela" data-name="PC Favela Rodrigo">Conectar PC Favela Rodrigo</button>
+                    <button class="host-btn" data-host="maria" id="connect-maria" data-name="PC Maria Rodrigo">Conectar PC Maria Rodrigo</button>
+                </div>
+
+                <div class="action-buttons grid-fx">
+                    <button class="f-key-btn" data-key="F1">F1</button>
+                    <button class="f-key-btn" data-key="F2">F2</button>
+                    <button class="f-key-btn" data-key="F3">F3</button>
+                    <button class="f-key-btn" data-key="F4">F4</button>
+                    <button class="f-key-btn" data-key="F5">F5</button>
+                    <button class="f-key-btn" data-key="F6">F6</button>
+                    <button class="f-key-btn" data-key="F7">F7</button>
+                    <button class="f-key-btn" data-key="F8">F8</button>
+                    <button class="f-key-btn" data-key="F9">F9</button>
+                    <button class="f-key-btn" data-key="F10">F10</button>
+                    <button class="f-key-btn" data-key="F11">F11</button>
+                    <button class="f-key-btn" data-key="F12">F12</button>
+                </div>
+            </div>
+
+            <div id="config-tab" class="tab-page">
+                <h1 class="app-title">Configurações do Aplicativo</h1>
+                
+                <section class="config-section">
+                    <h2 class="config-subtitle">Configuração de Hosts</h2>
+                    <div id="host-config-container" class="host-config-container">
+                        
+                        <div class="host-config-item" data-host="favela">
+                            <h6>PC Favela Rodrigo</h6>
+                            <div class="host-input-grid">
+                                <div class="input-group">
+                                    <label for="favela-name" class="form-label">Nome:</label>
+                                    <input type="text" id="favela-name" data-field="name" class="form-input">
+                                </div>
+                                <div class="input-group">
+                                    <label for="favela-address" class="form-label">Endereço/IP:</label>
+                                    <input type="text" id="favela-address" data-field="address" class="form-input">
+                                </div>
+                                <div class="input-group">
+                                    <label for="favela-port" class="form-label">Porta:</label>
+                                    <input type="number" id="favela-port" data-field="port" min="1" max="65535" class="form-input">
+                                </div>
+                            </div>
+                            <div class="test-connection-area">
+                                <span class="test-status" id="favela-test-status"></span>
+                                <button class="test-connection-btn">Testar Conexão</button>
+                            </div>
+                        </div>
+
+                        <div class="host-config-item" data-host="maria">
+                            <h6>PC Maria Rodrigo</h6>
+                            <div class="host-input-grid">
+                                <div class="input-group">
+                                    <label for="maria-name" class="form-label">Nome:</label>
+                                    <input type="text" id="maria-name" data-field="name" class="form-input">
+                                </div>
+                                <div class="input-group">
+                                    <label for="maria-address" class="form-label">Endereço/IP:</label>
+                                    <input type="text" id="maria-address" data-field="address" class="form-input">
+                                </div>
+                                <div class="input-group">
+                                    <label for="maria-port" class="form-label">Porta:</label>
+                                    <input type="number" id="maria-port" data-field="port" min="1" max="65535" class="form-input">
+                                </div>
+                            </div>
+                            <div class="test-connection-area">
+                                <span class="test-status" id="maria-test-status"></span>
+                                <button class="test-connection-btn">Testar Conexão</button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <section class="config-section">
+                    <h2 class="config-subtitle">Mapeamento de Teclas (F1-F12)</h2>
+                    
+                    <div class="key-mapping-selector">
+                        <label for="key-host-select">Host para Edição:</label>
+                        <select id="key-host-select" class="custom-select"></select>
+                    </div>
+
+                    <div id="key-mappings-container">
+                        <p class="text-secondary">Aguardando carregamento da configuração...</p>
+                    </div>
+
+                </section>
+
+                <div class="config-actions">
+                    <button class="save-btn" id="save-config-btn">SALVAR CONFIGURAÇÃO</button>
+                    <button class="reset-btn" id="reset-config-btn">RESETAR (Padrão)</button>
+                </div>
+                
+                <p id="config-message" class="message-area"></p>
+            </div>
+        </div>
     </div>
 
-    <!-- Seção de Hosts -->
-    <div class="section">
-      <h2>Conectar Host</h2>
-      <div class="host-buttons">
-        <button class="host-btn" data-host="favela">
-          <div class="host-name">PC Favela Rodrigo</div>
-          <div class="host-address" id="favela-address">pcfavelarodrigo:5000</div>
-        </button>
-        
-        <button class="host-btn" data-host="maria">
-          <div class="host-name">PC Maria Rodrigo</div>
-          <div class="host-address" id="maria-address">pcmariarodrigo:5000</div>
-        </button>
-      </div>
-      
-      <div class="connection-actions">
-        <button id="disconnect-btn" disabled>Desconectar</button>
-        <button id="test-connection-btn" disabled>Testar Conexão</button>
-      </div>
-    </div>
-
-    <!-- Informações de Conexão -->
-    <div id="connection-info" class="connection-info hidden">
-      <h3>✅ Conectado com: <span id="connected-host"></span></h3>
-      <p>Teclas F1-F12 ativas e suprimidas do sistema</p>
-    </div>
-
-    <!-- Configurações -->
-    <div class="section">
-      <h2>Configurações</h2>
-      
-      <!-- Configuração de Hosts -->
-      <div class="config-group">
-        <h3>Endereços dos Hosts</h3>
-        <div id="host-config"></div>
-      </div>
-
-      <!-- Configuração de Teclas -->
-      <div class="config-group">
-        <h3>Mapeamento de Teclas</h3>
-        <p class="config-description">
-          Configure qual página (1-10) e cena (1-16) cada tecla F1-F12 irá ativar:
-        </p>
-        <div id="key-config"></div>
-      </div>
-
-      <div class="config-actions">
-        <button id="save-config" class="save-btn">Salvar Configurações</button>
-        <button id="reset-config" class="reset-btn">Restaurar Padrão</button>
-      </div>
-    </div>
-
-    <!-- Status das Teclas -->
-    <div class="section">
-      <h2>Status das Teclas</h2>
-      <div class="key-status">
-        <div class="key-grid" id="key-grid"></div>
-      </div>
-    </div>
-  </div>
-
-  <script src="renderer.js"></script>
+    <script src="renderer.js"></script>
 </body>
 </html>
