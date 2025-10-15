@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Define o diretório raiz do seu projeto Lumikit
-PROJECT_DIR="/home/bazzite/PROJETOS/lumikit-steamdeck-control"
+PROJECT_DIR="/home/deck/PROJETOS/lumikit-steamdeck-control/"
 
 # 🛑 CORREÇÃO CRÍTICA: Define o backend gráfico para Wayland
 # Isso garante que o Electron saiba como se conectar ao GameScope.
