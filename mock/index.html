@@ -1,0 +1,1560 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumikit Deck Control - MOCK UI/UX v4</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-main: #0a0a14;
+      --bg-panel: #111122;
+      --bg-card: #18182e;
+      --bg-card-hover: #222240;
+      --bg-card-focused: #2d2659;
+      --border: #2e2b54;
+      --border-focus: #7c3aed;
+      --accent: #7c3aed;
+      --accent-glow: rgba(124, 58, 237, 0.45);
+      --accent-cyan: #06b6d4;
+      --accent-rose: #f43f5e;
+      --accent-green: #10b981;
+      --accent-amber: #f59e0b;
+      --text-main: #f1f5f9;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --key-badge: #2d2659;
+      --steamos-topbar: #16162a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background: radial-gradient(circle at 50% 0%, #1a1638 0%, var(--bg-main) 70%);
+      color: var(--text-main);
+      font-family: 'Inter', sans-serif;
+      width: 100vw;
+      height: 100vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Top Bar */
+    header {
+      height: 56px;
+      background: rgba(17, 17, 34, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--accent), var(--accent-rose));
+      border-radius: 8px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 16px var(--accent-glow);
+    }
+
+    .brand h1 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      text-transform: uppercase;
+    }
+
+    .mode-pill {
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      padding: 3px 10px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+      transition: all 0.2s ease;
+    }
+
+    .mode-pill.live {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: var(--accent-green);
+    }
+
+    .mode-pill.select-host {
+      background: rgba(124, 58, 237, 0.15);
+      border: 1px solid rgba(124, 58, 237, 0.4);
+      color: #c4b5fd;
+    }
+
+    .mode-pill.edit {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: var(--accent-amber);
+    }
+
+    .mode-pill.subedit {
+      background: rgba(6, 182, 212, 0.15);
+      border: 1px solid rgba(6, 182, 212, 0.4);
+      color: var(--accent-cyan);
+    }
+
+    .host-badge-top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--text-dim);
+    }
+
+    .status-dot.connected {
+      background: var(--accent-green);
+      box-shadow: 0 0 8px var(--accent-green);
+    }
+
+    /* Views container */
+    .view-container {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .view-screen {
+      position: absolute;
+      inset: 0;
+      display: none;
+      flex-direction: column;
+      padding: 20px 24px;
+      animation: fadeIn 0.2s ease;
+    }
+
+    .view-screen.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: scale(0.99); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    /* ============================================================
+       TELA 1: HOME (MODO LIVE / OPERAÇÃO)
+       ============================================================ */
+    #view-home {
+      justify-content: space-between;
+      align-items: center;
+      padding: 30px 40px 20px;
+    }
+
+    .home-hero {
+      text-align: center;
+    }
+
+    .home-hero h2 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 6px;
+    }
+
+    .home-hero p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+
+    .hosts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      width: 100%;
+      max-width: 860px;
+      margin: 10px 0;
+    }
+
+    .host-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 16px;
+      padding: 22px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .host-card:hover, .host-card.focused {
+      transform: translateY(-3px);
+      border-color: var(--border-focus);
+      background: var(--bg-card-hover);
+      box-shadow: 0 10px 30px var(--accent-glow);
+    }
+
+    .host-card.active-host {
+      border-color: var(--accent-green);
+      background: linear-gradient(135deg, rgba(16, 185, 129, 0.08), rgba(24, 24, 46, 0.9));
+      box-shadow: 0 0 24px rgba(16, 185, 129, 0.25);
+    }
+
+    .host-info h3 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .host-info span {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .host-status-badge {
+      padding: 6px 14px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      letter-spacing: 0.5px;
+    }
+
+    .host-status-badge.connected {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--accent-green);
+      border: 1px solid var(--accent-green);
+    }
+
+    .host-status-badge.disconnected {
+      background: rgba(148, 163, 184, 0.1);
+      color: var(--text-dim);
+      border: 1px solid var(--border);
+    }
+
+    .home-actions {
+      width: 100%;
+      max-width: 860px;
+    }
+
+    .big-edit-btn {
+      width: 100%;
+      background: linear-gradient(135deg, var(--accent), #9333ea);
+      border: 2px solid #a855f7;
+      color: #fff;
+      padding: 16px 24px;
+      border-radius: 14px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      box-shadow: 0 8px 24px var(--accent-glow);
+      transition: all 0.2s ease;
+    }
+
+    .big-edit-btn:hover, .big-edit-btn:focus {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(124, 58, 237, 0.65);
+      background: linear-gradient(135deg, #8b5cf6, #a855f7);
+    }
+
+    .big-edit-btn:active {
+      transform: scale(0.98);
+    }
+
+    .live-notice {
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+
+    /* ============================================================
+       TELA 1.5: SELEÇÃO DE QUAL HOST VAI SER EDITADO
+       ============================================================ */
+    #view-choose-host {
+      justify-content: center;
+      align-items: center;
+      gap: 28px;
+      padding: 40px;
+    }
+
+    .choose-host-title {
+      text-align: center;
+    }
+
+    .choose-host-title h2 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 8px;
+    }
+
+    .choose-host-title p {
+      color: var(--text-muted);
+      font-size: 1rem;
+    }
+
+    .choose-host-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      width: 100%;
+      max-width: 820px;
+    }
+
+    .choose-host-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 18px;
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+      gap: 14px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+      position: relative;
+    }
+
+    .choose-host-card:hover, .choose-host-card.focused {
+      transform: translateY(-4px);
+      border-color: var(--accent);
+      background: var(--bg-card-hover);
+      box-shadow: 0 12px 35px var(--accent-glow);
+    }
+
+    .choose-host-card.focused::after {
+      content: 'SELECIONADO (A p/ Abrir)';
+      position: absolute;
+      top: -10px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 0.65rem;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      padding: 2px 8px;
+      border-radius: 4px;
+      letter-spacing: 0.5px;
+    }
+
+    .choose-host-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.3), rgba(6, 182, 212, 0.3));
+      border: 1px solid var(--border);
+      display: grid;
+      place-items: center;
+    }
+
+    .choose-host-card h3 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .choose-host-card .host-sub {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    .choose-host-btn {
+      margin-top: 6px;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      color: #c4b5fd;
+      padding: 8px 18px;
+      border-radius: 8px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      transition: all 0.15s ease;
+    }
+
+    .choose-host-card:hover .choose-host-btn,
+    .choose-host-card.focused .choose-host-btn {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    /* ============================================================
+       TELA 2: EDIÇÃO GERAL (GRID DE CARDS F1-F12 + BARRA DE HOST)
+       ============================================================ */
+    #view-edit-grid {
+      padding: 10px 24px;
+      gap: 10px;
+    }
+
+    .edit-grid-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 8px 16px;
+      flex-shrink: 0;
+      gap: 12px;
+    }
+
+    .edit-host-info-block {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .edit-target-label {
+      font-size: 0.8rem;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .edit-target-name {
+      color: var(--accent-amber);
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.15rem;
+      font-weight: 700;
+    }
+
+    .edit-target-ip-badge {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.82rem;
+      color: var(--accent-cyan);
+      font-family: 'Chakra Petch', sans-serif;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .header-actions-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* Botão Gigante de Configurar Endereço IP / Host */
+    .edit-address-btn {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(124, 58, 237, 0.2));
+      border: 1.5px solid var(--accent-cyan);
+      color: #e0f2fe;
+      padding: 7px 16px;
+      border-radius: 8px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.88rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+      box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+    }
+
+    .edit-address-btn:hover {
+      background: var(--accent-cyan);
+      color: #000;
+      box-shadow: 0 0 20px rgba(6, 182, 212, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .edit-address-btn:active {
+      transform: scale(0.96);
+    }
+
+    .switch-editing-host-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 7px 12px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.15s ease;
+    }
+
+    .switch-editing-host-btn:hover {
+      border-color: var(--accent-amber);
+      color: var(--text-main);
+    }
+
+    .cards-grid {
+      flex: 1;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    .key-card {
+      background: var(--bg-card);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      position: relative;
+    }
+
+    .key-card:hover, .key-card.focused {
+      transform: translateY(-2px);
+      border-color: var(--accent-amber);
+      background: var(--bg-card-focused);
+      box-shadow: 0 6px 20px rgba(245, 158, 11, 0.35);
+    }
+
+    .key-card.focused::after {
+      content: 'SELECIONADO (A)';
+      position: absolute;
+      top: -8px;
+      right: 8px;
+      background: var(--accent-amber);
+      color: #000;
+      font-size: 0.6rem;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      padding: 1px 6px;
+      border-radius: 4px;
+      letter-spacing: 0.3px;
+    }
+
+    .card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .f-key-badge {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: var(--key-badge);
+      color: #fff;
+      padding: 2px 8px;
+      border-radius: 6px;
+      border: 1px solid rgba(255,255,255,0.1);
+    }
+
+    .card-summary {
+      display: flex;
+      justify-content: space-around;
+      align-items: center;
+      background: var(--bg-main);
+      padding: 6px;
+      border-radius: 8px;
+      margin: 3px 0;
+    }
+
+    .summary-item {
+      text-align: center;
+    }
+
+    .summary-label {
+      font-size: 0.65rem;
+      color: var(--text-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      display: block;
+    }
+
+    .summary-val {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+    }
+
+    .card-extra {
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      background: rgba(0,0,0,0.25);
+      padding: 2px 6px;
+      border-radius: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* ============================================================
+       MODAL 1: EDITAR ENDEREÇO / IP / PORTA DO HOST (GIGANTE / TOUCH)
+       ============================================================ */
+    .host-address-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 20, 0.92);
+      backdrop-filter: blur(10px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 60;
+      animation: modalIn 0.2s ease;
+    }
+
+    .host-address-modal-overlay.active {
+      display: flex;
+    }
+
+    .host-address-modal {
+      background: var(--bg-panel);
+      border: 2px solid var(--accent-cyan);
+      box-shadow: 0 0 45px rgba(6, 182, 212, 0.35);
+      border-radius: 20px;
+      width: 620px;
+      padding: 28px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .host-address-modal h3 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .input-field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-width: 0;
+      width: 100%;
+    }
+
+    .input-field-group label {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .big-touch-input {
+      background: var(--bg-main);
+      border: 2px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 18px;
+      color: #fff;
+      font-family: 'Chakra Petch', monospace;
+      font-size: 1.4rem;
+      font-weight: 600;
+      outline: none;
+      transition: all 0.2s ease;
+      user-select: text !important;
+      -webkit-user-select: text !important;
+      width: 100%;
+      box-sizing: border-box;
+    }
+
+    .big-touch-input:focus {
+      border-color: var(--accent-cyan);
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.4);
+      background: #0f172a;
+    }
+
+    .input-row-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 130px;
+      gap: 14px;
+      width: 100%;
+    }
+
+    .test-conn-btn {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid var(--accent-green);
+      color: var(--accent-green);
+      padding: 12px;
+      border-radius: 10px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.15s ease;
+    }
+
+    .test-conn-btn:hover {
+      background: var(--accent-green);
+      color: #000;
+    }
+
+    /* ============================================================
+       MODAL 2: AJUSTE DE CENA / PÁGINA DE UM CARD
+       ============================================================ */
+    .card-modal-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 10, 20, 0.88);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      animation: modalIn 0.2s ease;
+    }
+
+    .card-modal-overlay.active {
+      display: flex;
+    }
+
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.95); }
+      to { opacity: 1; transform: scale(1); }
+    }
+
+    .card-modal {
+      background: var(--bg-panel);
+      border: 2px solid var(--accent-cyan);
+      box-shadow: 0 0 35px rgba(6, 182, 212, 0.35);
+      border-radius: 18px;
+      width: 520px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    .modal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 12px;
+    }
+
+    .modal-header h3 {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--accent-cyan);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-controls {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .modal-control-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 16px;
+      transition: all 0.15s ease;
+    }
+
+    .modal-control-row.focused-row {
+      border-color: var(--accent-cyan);
+      background: var(--bg-card-focused);
+    }
+
+    .modal-control-label {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: 0.5px;
+    }
+
+    .stepper-big {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .step-btn-big {
+      width: 44px;
+      height: 44px;
+      background: var(--bg-main);
+      border: 2px solid var(--border);
+      color: var(--text-main);
+      font-size: 1.4rem;
+      font-weight: bold;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      cursor: pointer;
+      transition: all 0.1s ease;
+    }
+
+    .step-btn-big:hover {
+      background: var(--accent-cyan);
+      border-color: var(--accent-cyan);
+      color: #000;
+    }
+
+    .step-btn-big:active {
+      transform: scale(0.92);
+    }
+
+    .step-val-big {
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 2rem;
+      font-weight: 700;
+      min-width: 50px;
+      text-align: center;
+      color: var(--accent-cyan);
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .modal-btn {
+      flex: 1;
+      padding: 12px;
+      border-radius: 10px;
+      font-family: 'Chakra Petch', sans-serif;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      border: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .modal-btn.confirm {
+      background: var(--accent-cyan);
+      color: #000;
+    }
+
+    .modal-btn.cancel {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    /* ============================================================
+       FOOTER (CLICÁVEL E RESPONSIVO)
+       ============================================================ */
+    footer {
+      height: 48px;
+      background: var(--steamos-topbar);
+      border-top: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      flex-shrink: 0;
+    }
+
+    .gamepad-hints {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .hint-item {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .hint-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+      border-color: var(--border);
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    .hint-item:active {
+      transform: scale(0.96);
+    }
+
+    .btn-badge {
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: #2b2b45;
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      border: 1px solid #4a4a70;
+    }
+
+    .btn-badge.btn-a { background: #10b981; color: #000; border: none; }
+    .btn-badge.btn-b { background: #ef4444; color: #fff; border: none; }
+    .btn-badge.btn-x { background: #06b6d4; color: #000; border: none; }
+    .btn-badge.btn-y { background: #f59e0b; color: #000; border: none; }
+
+    .toast-msg {
+      position: absolute;
+      bottom: 56px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(16, 185, 129, 0.95);
+      color: #000;
+      font-weight: 700;
+      font-family: 'Chakra Petch', sans-serif;
+      padding: 8px 20px;
+      border-radius: 8px;
+      display: none;
+      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+      z-index: 100;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+      </div>
+      <h1>Lumikit Deck Control</h1>
+      <span id="top-mode-pill" class="mode-pill live">MODO OPERAÇÃO (LIVE)</span>
+    </div>
+
+    <div class="host-badge-top">
+      <span class="status-dot connected"></span>
+      <span id="top-host-name">Conectado: <strong>PC Favela Rodrigo</strong></span>
+    </div>
+  </header>
+
+  <!-- Container de Telas -->
+  <div class="view-container">
+
+    <!-- ============================================================
+         TELA 1: HOME (MODO OPERAÇÃO / LIVE)
+         ============================================================ -->
+    <div id="view-home" class="view-screen active">
+      <div class="home-hero">
+        <h2>Controle de Iluminação Live</h2>
+        <p>Host ativo em execução. Os botões F1–F12 disparam as cenas diretamente no Lumikit.</p>
+      </div>
+
+      <div class="hosts-grid">
+        <div class="host-card active-host" onclick="selectLiveHost(this, 'favela', 'PC Favela Rodrigo')">
+          <div class="host-info">
+            <h3>PC FAVELA</h3>
+            <span id="live-host-addr-favela">pcrodrigoxeon : 5000</span>
+          </div>
+          <span class="host-status-badge connected">ATIVO</span>
+        </div>
+
+        <div class="host-card" onclick="selectLiveHost(this, 'maria', 'PC Maria Rodrigo')">
+          <div class="host-info">
+            <h3>PC MARIA</h3>
+            <span id="live-host-addr-maria">pcmariarodrigo : 5000</span>
+          </div>
+          <span class="host-status-badge disconnected">CONECTAR</span>
+        </div>
+      </div>
+
+      <div class="home-actions">
+        <button class="big-edit-btn" onclick="goToChooseHost()">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          EDITAR MAPEAMENTO DAS TECLAS (F1–F12)
+        </button>
+        <p class="live-notice">Ao entrar em edição, D-Pad/F1–F4 navegam pelos menus sem disparar cenas live.</p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 1.5: SELEÇÃO DE QUAL HOST VAI SER EDITADO
+         ============================================================ -->
+    <div id="view-choose-host" class="view-screen">
+      <div class="choose-host-title">
+        <h2>Qual Host Você Deseja Editar?</h2>
+        <p>Escolha qual computador terá seu mapa de cenas F1–F12 ou IP modificado.</p>
+      </div>
+
+      <div class="choose-host-grid">
+        <div class="choose-host-card focused" id="host-opt-favela" onclick="openGridForHost('favela', 'PC Favela Rodrigo')">
+          <div class="choose-host-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <h3>PC FAVELA</h3>
+          <span class="host-sub" id="choose-sub-favela">pcrodrigoxeon : 5000 (12 Teclas)</span>
+          <div class="choose-host-btn">EDITAR ESTE MAPA / IP</div>
+        </div>
+
+        <div class="choose-host-card" id="host-opt-maria" onclick="openGridForHost('maria', 'PC Maria Rodrigo')">
+          <div class="choose-host-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="var(--accent-cyan)" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <h3>PC MARIA</h3>
+          <span class="host-sub" id="choose-sub-maria">pcmariarodrigo : 5000 (12 Teclas)</span>
+          <div class="choose-host-btn">EDITAR ESTE MAPA / IP</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 2: EDIÇÃO (GRID 4x3 DOS CARDS + BOTÃO EDITAR IP NO TOPO)
+         ============================================================ -->
+    <div id="view-edit-grid" class="view-screen">
+      <div class="edit-grid-header">
+        <div class="edit-host-info-block">
+          <div>
+            <div class="edit-target-label">Editando:</div>
+            <div class="edit-target-name" id="editing-host-title">PC Favela Rodrigo</div>
+          </div>
+          <div class="edit-target-ip-badge" id="editing-host-badge">pcrodrigoxeon:5000</div>
+        </div>
+
+        <div class="header-actions-right">
+          <!-- BOTÃO GIGANTE DE CONFIGURAR ENDEREÇO/IP -->
+          <button class="edit-address-btn" onclick="openHostAddressModal()">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            EDITAR IP / ENDEREÇO
+          </button>
+
+          <button class="switch-editing-host-btn" onclick="goToChooseHost()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 3h5v5M4 20L20.2 3.8M21 16v5h-5M15 15l5.1 5.1M4 4l5 5"></path>
+            </svg>
+            Trocar Host
+          </button>
+        </div>
+      </div>
+
+      <div class="cards-grid" id="edit-cards-container">
+        <!-- Gerado dinamicamente via JS -->
+      </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL 1: EDITAR ENDEREÇO / IP / PORTA DO HOST (TOUCH & STEAM KEYBOARD)
+         ============================================================ -->
+    <div id="host-address-modal-overlay" class="host-address-modal-overlay">
+      <div class="host-address-modal">
+        <div class="modal-header">
+          <h3 id="host-modal-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+            Configurar Endereço do Host
+          </h3>
+          <span class="mode-pill edit">REDE LUMIKIT</span>
+        </div>
+
+        <div class="input-field-group">
+          <label>Nome do Computador</label>
+          <input type="text" id="input-host-name" class="big-touch-input" placeholder="Ex: PC Favela">
+        </div>
+
+        <div class="input-row-grid">
+          <div class="input-field-group">
+            <label>Endereço IP ou Hostname (DNS)</label>
+            <input type="text" id="input-host-ip" class="big-touch-input" placeholder="Ex: 192.168.1.100 ou pcrodrigoxeon">
+          </div>
+          <div class="input-field-group">
+            <label>Porta REST</label>
+            <input type="number" id="input-host-port" class="big-touch-input" placeholder="5000">
+          </div>
+        </div>
+
+        <button class="test-conn-btn" onclick="testHostConnection()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          TESTAR CONEXÃO COM LUMIKIT
+        </button>
+
+        <div class="modal-actions">
+          <button class="modal-btn confirm" onclick="saveHostAddress()">
+            <span>(A) SALVAR ENDEREÇO</span>
+          </button>
+          <button class="modal-btn cancel" onclick="closeHostAddressModal()">
+            <span>(B) CANCELAR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL 2: AJUSTE DE CENA / PÁGINA DE UM CARD
+         ============================================================ -->
+    <div id="card-modal-overlay" class="card-modal-overlay">
+      <div class="card-modal">
+        <div class="modal-header">
+          <h3 id="modal-card-title">Configurar Tecla F1</h3>
+          <span class="mode-pill subedit">EDITANDO CENA</span>
+        </div>
+
+        <div class="modal-controls">
+          <div class="modal-control-row focused-row">
+            <span class="modal-control-label">PÁGINA</span>
+            <div class="stepper-big">
+              <button class="step-btn-big" onclick="adjustModal('page', -1)">‹</button>
+              <span class="step-val-big" id="modal-page-val">1</span>
+              <button class="step-btn-big" onclick="adjustModal('page', 1)">›</button>
+            </div>
+          </div>
+
+          <div class="modal-control-row">
+            <span class="modal-control-label">CENA</span>
+            <div class="stepper-big">
+              <button class="step-btn-big" onclick="adjustModal('scene', -1)">‹</button>
+              <span class="step-val-big" id="modal-scene-val">1</span>
+              <button class="step-btn-big" onclick="adjustModal('scene', 1)">›</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-btn confirm" onclick="confirmCardEdit()">
+            <span>(A) CONFIRMAR</span>
+          </button>
+          <button class="modal-btn cancel" onclick="closeCardModal()">
+            <span>(B) CANCELAR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast de Feedback -->
+    <div id="toast" class="toast-msg">Mapeamento Salvo com Sucesso!</div>
+
+  </div>
+
+  <!-- Footer com Legendas Dinâmicas & Clicáveis -->
+  <footer>
+    <div class="gamepad-hints" id="footer-hints">
+      <!-- Injetado dinamicamente via updateFooter() -->
+    </div>
+
+    <div style="font-size: 0.8rem; color: var(--text-dim);">
+      Steam Deck UI • Lumikit REST
+    </div>
+  </footer>
+
+  <!-- Lógica Interativa do Mock -->
+  <script>
+    // Configurações completas dos Hosts (Endereço + Mapeamentos)
+    const hostConfigs = {
+      favela: {
+        name: 'PC Favela Rodrigo',
+        address: 'pcrodrigoxeon',
+        port: 5000,
+        keys: [
+          { key: 'F1', page: 1, scene: 1, cmd: '' },
+          { key: 'F2', page: 1, scene: 2, cmd: '' },
+          { key: 'F3', page: 1, scene: 3, cmd: '' },
+          { key: 'F4', page: 1, scene: 4, cmd: '' },
+          { key: 'F5', page: 1, scene: 5, cmd: '' },
+          { key: 'F6', page: 1, scene: 6, cmd: '' },
+          { key: 'F7', page: 1, scene: 7, cmd: '' },
+          { key: 'F8', page: 1, scene: 8, cmd: '' },
+          { key: 'F9', page: 1, scene: 9, cmd: '' },
+          { key: 'F10', page: 1, scene: 10, cmd: 'cena10.sh' },
+          { key: 'F11', page: 1, scene: 11, cmd: 'strobe.sh' },
+          { key: 'F12', page: 1, scene: 12, cmd: 'blackout.sh' }
+        ]
+      },
+      maria: {
+        name: 'PC Maria Rodrigo',
+        address: 'pcmariarodrigo',
+        port: 5000,
+        keys: [
+          { key: 'F1', page: 2, scene: 1, cmd: '' },
+          { key: 'F2', page: 2, scene: 2, cmd: '' },
+          { key: 'F3', page: 2, scene: 3, cmd: '' },
+          { key: 'F4', page: 2, scene: 4, cmd: '' },
+          { key: 'F5', page: 2, scene: 5, cmd: '' },
+          { key: 'F6', page: 2, scene: 6, cmd: '' },
+          { key: 'F7', page: 2, scene: 7, cmd: '' },
+          { key: 'F8', page: 2, scene: 8, cmd: '' },
+          { key: 'F9', page: 2, scene: 9, cmd: '' },
+          { key: 'F10', page: 2, scene: 10, cmd: 'maria_cmd10.sh' },
+          { key: 'F11', page: 2, scene: 11, cmd: 'maria_cmd11.sh' },
+          { key: 'F12', page: 2, scene: 12, cmd: 'maria_blackout.sh' }
+        ]
+      }
+    };
+
+    let currentScreen = 'home'; // 'home' | 'choose-host' | 'grid' | 'modal' | 'host-address'
+    let editingHostKey = 'favela';
+    let chooseHostSelected = 0; // 0 = favela, 1 = maria
+    let selectedCardIndex = 0;
+    let editingCardIndex = 0;
+
+    function hideAllScreens() {
+      document.querySelectorAll('.view-screen').forEach(s => s.classList.remove('active'));
+    }
+
+    // Renderizar o Grid de Cards do host escolhido
+    function renderGrid() {
+      const container = document.getElementById('edit-cards-container');
+      const host = hostConfigs[editingHostKey];
+      container.innerHTML = host.keys.map((item, idx) => `
+        <div class="key-card ${idx === selectedCardIndex ? 'focused' : ''}" onclick="openCardConfig(${idx})">
+          <div class="card-head">
+            <span class="f-key-badge">${item.key}</span>
+            <span style="font-size:0.7rem; color:var(--text-dim);">CARD #${idx+1}</span>
+          </div>
+          <div class="card-summary">
+            <div class="summary-item">
+              <span class="summary-label">Pág</span>
+              <span class="summary-val" id="sum-page-${idx}">${item.page}</span>
+            </div>
+            <div class="summary-item">
+              <span class="summary-label">Cena</span>
+              <span class="summary-val" id="sum-scene-${idx}">${item.scene}</span>
+            </div>
+          </div>
+          <div class="card-extra">
+            ${item.cmd ? `CMD: ${item.cmd}` : 'Lumikit REST Direct'}
+          </div>
+        </div>
+      `).join('');
+    }
+
+    // Atualizar Footer com legendas contextuais
+    function updateFooter() {
+      const hints = document.getElementById('footer-hints');
+      const topPill = document.getElementById('top-mode-pill');
+      const host = hostConfigs[editingHostKey];
+
+      if (currentScreen === 'home') {
+        topPill.className = 'mode-pill live';
+        topPill.innerText = 'MODO OPERAÇÃO (LIVE)';
+        hints.innerHTML = `
+          <div class="hint-item" onclick="goToChooseHost()"><span class="btn-badge btn-a">A</span> <span>Editar Mapeamento</span></div>
+          <div class="hint-item" onclick="toggleLiveHost()"><span class="btn-badge btn-y">Y</span> <span>Alternar Host Live</span></div>
+          <div class="hint-item" style="cursor:default;"><span class="btn-badge">F1-F12</span> <span>Disparar Cenas</span></div>
+        `;
+      } else if (currentScreen === 'choose-host') {
+        topPill.className = 'mode-pill select-host';
+        topPill.innerText = 'SELECIONE O HOST PARA EDITAR';
+        hints.innerHTML = `
+          <div class="hint-item" style="cursor:default;"><span class="btn-badge">D-PAD (F1/F3)</span> <span>Alternar Host</span></div>
+          <div class="hint-item" onclick="confirmChooseHost()"><span class="btn-badge btn-a">A</span> <span>Confirmar e Abrir Cards</span></div>
+          <div class="hint-item" onclick="backToHome()"><span class="btn-badge btn-b">B</span> <span>Voltar ao Live</span></div>
+        `;
+      } else if (currentScreen === 'grid') {
+        topPill.className = 'mode-pill edit';
+        topPill.innerText = `EDITANDO: ${host.name.toUpperCase()}`;
+        hints.innerHTML = `
+          <div class="hint-item" style="cursor:default;"><span class="btn-badge">D-PAD (F1-F4)</span> <span>Mover Seleção</span></div>
+          <div class="hint-item" onclick="openCardConfig(selectedCardIndex)"><span class="btn-badge btn-a">A</span> <span>Editar Card</span></div>
+          <div class="hint-item" onclick="openHostAddressModal()"><span class="btn-badge btn-x">X</span> <span>Editar IP/Porta</span></div>
+          <div class="hint-item" onclick="saveChanges()"><span class="btn-badge btn-y">Y</span> <span>Salvar Alterações</span></div>
+          <div class="hint-item" onclick="goToChooseHost()"><span class="btn-badge btn-b">B</span> <span>Trocar Host / Voltar</span></div>
+        `;
+      } else if (currentScreen === 'host-address') {
+        topPill.className = 'mode-pill edit';
+        topPill.innerText = 'EDITANDO REDE / ENDEREÇO IP';
+        hints.innerHTML = `
+          <div class="hint-item" style="cursor:default;"><span class="btn-badge">TOUCH / STEAM KEYBOARD</span> <span>Digitar IP</span></div>
+          <div class="hint-item" onclick="saveHostAddress()"><span class="btn-badge btn-a">A</span> <span>Salvar Endereço</span></div>
+          <div class="hint-item" onclick="closeHostAddressModal()"><span class="btn-badge btn-b">B</span> <span>Cancelar</span></div>
+        `;
+      } else if (currentScreen === 'modal') {
+        topPill.className = 'mode-pill subedit';
+        topPill.innerText = 'EDITANDO VALORES DA TECLA';
+        hints.innerHTML = `
+          <div class="hint-item" style="cursor:default;"><span class="btn-badge">L2 / R2</span> <span>Mudar Valor &lt; &gt;</span></div>
+          <div class="hint-item" onclick="confirmCardEdit()"><span class="btn-badge btn-a">A</span> <span>Confirmar</span></div>
+          <div class="hint-item" onclick="closeCardModal()"><span class="btn-badge btn-b">B</span> <span>Cancelar</span></div>
+        `;
+      }
+    }
+
+    // Telas de Navegação
+    function goToChooseHost() {
+      currentScreen = 'choose-host';
+      hideAllScreens();
+      document.getElementById('view-choose-host').classList.add('active');
+      updateChooseHostCards();
+      updateFooter();
+    }
+
+    function updateChooseHostCards() {
+      const fav = document.getElementById('host-opt-favela');
+      const mar = document.getElementById('host-opt-maria');
+      fav.classList.toggle('focused', chooseHostSelected === 0);
+      mar.classList.toggle('focused', chooseHostSelected === 1);
+    }
+
+    function confirmChooseHost() {
+      if (chooseHostSelected === 0) {
+        openGridForHost('favela');
+      } else {
+        openGridForHost('maria');
+      }
+    }
+
+    function openGridForHost(hostKey) {
+      editingHostKey = hostKey;
+      const host = hostConfigs[hostKey];
+      document.getElementById('editing-host-title').innerText = host.name;
+      document.getElementById('editing-host-badge').innerText = `${host.address}:${host.port}`;
+      currentScreen = 'grid';
+      selectedCardIndex = 0;
+      hideAllScreens();
+      document.getElementById('view-edit-grid').classList.add('active');
+      renderGrid();
+      updateFooter();
+    }
+
+    function backToHome() {
+      currentScreen = 'home';
+      hideAllScreens();
+      document.getElementById('view-home').classList.add('active');
+      updateFooter();
+    }
+
+    // Modal de Endereço IP / Host
+    function openHostAddressModal() {
+      currentScreen = 'host-address';
+      const host = hostConfigs[editingHostKey];
+      document.getElementById('host-modal-title').innerHTML = `Configurar Endereço: <strong>${host.name}</strong>`;
+      document.getElementById('input-host-name').value = host.name;
+      document.getElementById('input-host-ip').value = host.address;
+      document.getElementById('input-host-port').value = host.port;
+      document.getElementById('host-address-modal-overlay').classList.add('active');
+      updateFooter();
+    }
+
+    function closeHostAddressModal() {
+      currentScreen = 'grid';
+      document.getElementById('host-address-modal-overlay').classList.remove('active');
+      updateFooter();
+    }
+
+    function saveHostAddress() {
+      const host = hostConfigs[editingHostKey];
+      host.name = document.getElementById('input-host-name').value;
+      host.address = document.getElementById('input-host-ip').value;
+      host.port = parseInt(document.getElementById('input-host-port').value) || 5000;
+
+      // Atualiza UI
+      document.getElementById('editing-host-title').innerText = host.name;
+      document.getElementById('editing-host-badge').innerText = `${host.address}:${host.port}`;
+      if (editingHostKey === 'favela') {
+        document.getElementById('live-host-addr-favela').innerText = `${host.address} : ${host.port}`;
+        document.getElementById('choose-sub-favela').innerText = `${host.address} : ${host.port} (12 Teclas)`;
+      } else {
+        document.getElementById('live-host-addr-maria').innerText = `${host.address} : ${host.port}`;
+        document.getElementById('choose-sub-maria').innerText = `${host.address} : ${host.port} (12 Teclas)`;
+      }
+
+      showToast(`Endereço de ${host.name} atualizado!`);
+      closeHostAddressModal();
+    }
+
+    function testHostConnection() {
+      const ip = document.getElementById('input-host-ip').value;
+      const port = document.getElementById('input-host-port').value;
+      showToast(`Conexão OK com Lumikit em ${ip}:${port}!`);
+    }
+
+    // Modal de Card (Cena / Página)
+    function openCardConfig(index) {
+      editingCardIndex = index;
+      currentScreen = 'modal';
+      const item = hostConfigs[editingHostKey].keys[index];
+      document.getElementById('modal-card-title').innerText = `Configurar ${item.key} (${editingHostKey.toUpperCase()})`;
+      document.getElementById('modal-page-val').innerText = item.page;
+      document.getElementById('modal-scene-val').innerText = item.scene;
+      document.getElementById('card-modal-overlay').classList.add('active');
+      updateFooter();
+    }
+
+    function closeCardModal() {
+      currentScreen = 'grid';
+      document.getElementById('card-modal-overlay').classList.remove('active');
+      updateFooter();
+    }
+
+    function adjustModal(type, delta) {
+      const el = document.getElementById(type === 'page' ? 'modal-page-val' : 'modal-scene-val');
+      let val = parseInt(el.innerText) + delta;
+      if (val < 1) val = 1;
+      if (val > 99) val = 99;
+      el.innerText = val;
+    }
+
+    function confirmCardEdit() {
+      const newPage = parseInt(document.getElementById('modal-page-val').innerText);
+      const newScene = parseInt(document.getElementById('modal-scene-val').innerText);
+      hostConfigs[editingHostKey].keys[editingCardIndex].page = newPage;
+      hostConfigs[editingHostKey].keys[editingCardIndex].scene = newScene;
+      renderGrid();
+      closeCardModal();
+    }
+
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.innerText = msg;
+      toast.style.display = 'block';
+      setTimeout(() => { toast.style.display = 'none'; }, 2500);
+    }
+
+    function saveChanges() {
+      const host = hostConfigs[editingHostKey];
+      showToast(`Mapeamento de ${host.name} Salvo com Sucesso!`);
+    }
+
+    function selectLiveHost(card, key, name) {
+      document.querySelectorAll('.hosts-grid .host-card').forEach(c => {
+        c.classList.remove('active-host');
+        c.querySelector('.host-status-badge').className = 'host-status-badge disconnected';
+        c.querySelector('.host-status-badge').innerText = 'CONECTAR';
+      });
+      card.classList.add('active-host');
+      card.querySelector('.host-status-badge').className = 'host-status-badge connected';
+      card.querySelector('.host-status-badge').innerText = 'ATIVO';
+      document.getElementById('top-host-name').innerHTML = `Conectado: <strong>${name}</strong>`;
+    }
+
+    function toggleLiveHost() {
+      const favela = document.querySelector('.hosts-grid .host-card:first-child');
+      const maria = document.querySelector('.hosts-grid .host-card:last-child');
+      if (favela.classList.contains('active-host')) {
+        selectLiveHost(maria, 'maria', hostConfigs.maria.name);
+      } else {
+        selectLiveHost(favela, 'favela', hostConfigs.favela.name);
+      }
+    }
+
+    // Atalhos de Teclado / Gamepad para Navegação no Mock
+    window.addEventListener('keydown', (e) => {
+      // Tecla B / ESC (Voltar / Cancelar)
+      if (e.key === 'b' || e.key === 'B' || e.key === 'Escape') {
+        if (currentScreen === 'modal') closeCardModal();
+        else if (currentScreen === 'host-address') closeHostAddressModal();
+        else if (currentScreen === 'grid') goToChooseHost();
+        else if (currentScreen === 'choose-host') backToHome();
+      }
+
+      // Tecla A / ENTER (Confirmar / Avançar)
+      if (e.key === 'a' || e.key === 'A' || e.key === 'Enter') {
+        if (currentScreen === 'home') goToChooseHost();
+        else if (currentScreen === 'choose-host') confirmChooseHost();
+        else if (currentScreen === 'grid') openCardConfig(selectedCardIndex);
+        else if (currentScreen === 'host-address') saveHostAddress();
+        else if (currentScreen === 'modal') confirmCardEdit();
+      }
+
+      // Tecla X (Abrir Edição de IP na Grid)
+      if (e.key === 'x' || e.key === 'X') {
+        if (currentScreen === 'grid') openHostAddressModal();
+      }
+
+      // Tecla Y (Salvar no grid / Alternar host no home)
+      if (e.key === 'y' || e.key === 'Y') {
+        if (currentScreen === 'grid') saveChanges();
+        else if (currentScreen === 'home') toggleLiveHost();
+      }
+
+      // Navegação D-Pad / Setas
+      if (currentScreen === 'choose-host') {
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || e.key === 'F1' || e.key === 'F3') {
+          chooseHostSelected = chooseHostSelected === 0 ? 1 : 0;
+          updateChooseHostCards();
+        }
+      } else if (currentScreen === 'grid') {
+        if ((e.key === 'ArrowRight' || e.key === 'F3') && selectedCardIndex < 11) selectedCardIndex++;
+        if ((e.key === 'ArrowLeft' || e.key === 'F1') && selectedCardIndex > 0) selectedCardIndex--;
+        if ((e.key === 'ArrowDown' || e.key === 'F4') && selectedCardIndex + 4 < 12) selectedCardIndex += 4;
+        if ((e.key === 'ArrowUp' || e.key === 'F2') && selectedCardIndex - 4 >= 0) selectedCardIndex -= 4;
+        renderGrid();
+      }
+    });
+
+    // Boot inicial
+    updateFooter();
+  </script>
+</body>
+</html>

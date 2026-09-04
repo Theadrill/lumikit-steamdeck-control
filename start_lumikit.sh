@@ -1,16 +1,22 @@
 #!/bin/bash
 
+# Carrega o Node / NVM para garantir que 'node' seja encontrado mesmo fora do terminal
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+export PATH="$HOME/.nvm/versions/node/$(ls $HOME/.nvm/versions/node 2>/dev/null | tail -n 1)/bin:$PATH"
+
 # Define o diretório raiz do seu projeto Lumikit
-PROJECT_DIR="/home/deck/PROJETOS/lumikit-steamdeck-control/"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$SCRIPT_DIR"
 
 # 🛑 CORREÇÃO CRÍTICA: Define o backend gráfico para Wayland
 # Isso garante que o Electron saiba como se conectar ao GameScope.
-# Se o Wayland não funcionar, ele deve tentar fallback para XWayland.
 export GDK_BACKEND=wayland,x11
 
-# Navega para o diretório do projeto
-cd "$PROJECT_DIR"
+# 🛑 CORREÇÃO CRÍTICA 2: Configuração do Display
+export DISPLAY=:0
 
-# Executa o aplicativo Electron a partir da node_modules
-# Mantemos o gamemoderun, que é inofensivo no modo desktop e útil no modo gaming.
+cd "$PROJECT_DIR" || exit 1
+
+# Inicia o Electron com --no-sandbox (necessário no SteamOS)
 ./node_modules/.bin/electron . --no-sandbox
