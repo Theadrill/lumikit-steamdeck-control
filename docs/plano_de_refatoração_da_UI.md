@@ -14,16 +14,45 @@ Migrar a interface gráfica legada (`index.html`, `styles.css`, `renderer.js`) p
 
 ---
 
+## 🎮 REGRA DE NEGÓCIO CENTRAL: Steam Input D-Pad (F1–F4) & Modos de Operação
+
+O layout do **Steam Input** no Steam Deck mapeia o direcional físico (D-Pad) para as teclas de função `F1` a `F4`:
+- ⬅️ **D-Pad Left:** `F1`
+- ⬆️ **D-Pad Up:** `F2`
+- ➡️ **D-Pad Right:** `F3`
+- ⬇️ **D-Pad Down:** `F4`
+
+### 🔄 Modos de Operação:
+1. **Modo Live (Tela Principal `#view-home`):**
+   - As teclas `F1` a `F12` atuam como **disparadores de cenas DMX no Lumikit** via REST API (e executam scripts de automação `.bat`/`.sh` vinculados).
+   - O usuário pode controlar a iluminação ao vivo livremente.
+2. **Modo Edição (Ao entrar em `#view-choose-host`, `#view-edit-grid` ou Modais):**
+   - O app **intercepta e consome `F1` a `F4` localmente**, desativando os disparos REST de iluminação.
+   - As teclas passam a funcionar exclusivamente para **navegação direcional na interface**:
+     - `F1` (Left): Navega para o card à esquerda / Decrementa valor no modal (`‹`).
+     - `F2` (Up): Navega para o card de cima / Alterna para campo superior (Página / Nome).
+     - `F3` (Right): Navega para o card à direita / Incrementa valor no modal (`›`).
+     - `F4` (Down): Navega para o card de baixo / Alterna para campo inferior (Cena / IP).
+   - Botões de suporte:
+     - `A` (Enter): Abre card / Confirma modal.
+     - `B` (Escape): Volta para a tela anterior / Fecha modal (descartando).
+     - `X`: Atalho rápido para editar endereço/IP do host.
+     - `Y`: Salva as alterações na configuração (`save-config`).
+     - `L2 / R2`: Incremento/Decremento rápido nos steppers (`-1` / `+1`).
+3. **Retorno ao Modo Live (Ao pressionar `B` ou botão Voltar):**
+   - Ao retornar para `#view-home`, as teclas `F1`–`F12` são liberadas novamente para disparos REST imediatos.
+
+---
+
 ## 🏗️ Princípios de Engenharia e Compatibilidade
 1. **Preservação Total da Lógica**:
    - Manutenção de todos os canais IPC (`get-config`, `save-config`, `connect-host`, `disconnect-host`, `get-status`, `test-connection`, `simulate-f-key`, `run-command`, `get-os`).
    - Manutenção do fallback DNS, cache de IP e chamadas REST `/services/edmx_change_scene/{page}/{scene}`.
    - Manutenção da execução de scripts externos (`.bat` / `.sh`) configurados para as teclas (F10–F12).
    - Manutenção do indexador humano (UI: 1-based, Config/REST: 0-based).
-2. **Ergonomia e Navegação Gamepad-First**:
-   - D-Pad físico do Steam Deck (F1=Left, F2=Up, F3=Right, F4=Down) interceptado no modo de edição para navegar entre cards/telas sem disparar DMX.
-   - Botões de Ação: `A` (Confirmar/Abrir), `B` (Voltar/Cancelar), `X` (Editar Host/IP), `Y` (Salvar Alterações).
-   - Steppers (`‹` e `›`) operáveis por toque, mouse e gatilhos `L2 / R2`.
+2. **Ergonomia e Navegação Gamepad-First (com suporte a Mouse/Teclado)**:
+   - D-Pad e botões de ação mapeados e responsivos com anéis de foco visual claros.
+   - Compatibilidade total mantida para cliques de mouse e toques na tela.
 3. **Validação Contínua**: O desenvolvimento será feito em etapas isoladas com paradas críticas para teste direto no Steam Deck.
 
 ---
@@ -42,18 +71,14 @@ Migrar a interface gráfica legada (`index.html`, `styles.css`, `renderer.js`) p
 ---
 
 ### 🎮 FASE 2: Máquina de Estados de Navegação e Gamepad no `renderer.js`
-* **Objetivo**: Implementar a máquina de estados que alterna entre:
-  - `home` (Modo Live Operation)
-  - `choose-host` (Seleção de Host para Edição)
-  - `grid` (Grid de 12 Cards F1–F12)
-  - `modal-card` (Edição de Página/Cena com Steppers)
-  - `modal-host` (Edição de IP/Porta do Host)
+* **Objetivo**: Implementar a máquina de estados e o interceptor D-Pad F1–F4 vs Modo Live.
 * **Ações**:
   1. Criar o interceptor de teclas locais para D-Pad (`F1`–`F4`), Gatilhos (`L2`/`R2`) e botões (`A`/`Enter`, `B`/`Escape`, `X`, `Y`).
-  2. Garantir que no modo `home` as teclas acionem a simulação de disparo live e nos outros modos sejam consumidas para navegação.
+  2. Implementar a regra de negócio: No modo `home`, `F1`–`F12` disparam cenas REST; nos modos de edição, `F1`–`F4` realizam a navegação no grid/modais sem acionar a API de DMX.
+  3. Gerenciar o foco visual ativo (`.selected-card`, `.focused-row`, etc.).
 * **🛑 PARADA CRÍTICA 2 (Validação de Navegação)**:
-  - Navegar entre telas usando teclado, mouse e controles do Steam Deck.
-  - Testar a abertura e fechamento de modais com `A` e `B`.
+  - Navegar entre telas usando D-pad (F1–F4), teclado, mouse e touch.
+  - Testar a abertura e fechamento de modais com `A` e `B` sem disparar cenas acidentalmente.
 
 ---
 
@@ -62,7 +87,7 @@ Migrar a interface gráfica legada (`index.html`, `styles.css`, `renderer.js`) p
 * **Ações**:
   1. Carregar configuração real do `config.json` via `getConfig()` e preencher cards e dados dos hosts (`favela` e `maria`).
   2. Implementar `connectHost()` na tela inicial com indicador visual de status em tempo real (`connection-status-update`).
-  3. Implementar salvamento de alterações (`saveConfig()`) com toast de feedback.
+  3. Implementar salvamento de alterações (`saveConfig()`) via botão `Y` ou clique, com toast de feedback.
   4. Implementar teste de conexão (`testConnection()`) no modal de endereço de host.
   5. Sincronizar scripts associados (`.bat`/`.sh`) nos cards F10–F12.
 * **🛑 PARADA CRÍTICA 3 (Validação Funcional End-to-End)**:
