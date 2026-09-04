@@ -35,6 +35,7 @@ let osType = 'linux';
 
 // Screen states: 'home' | 'choose-host' | 'grid' | 'modal-card' | 'modal-host'
 let currentScreen = 'home';
+let homeSelectedIndex = 0; // 0 = favela, 1 = maria, 2 = btn-goto-choose-host (quando desconectado)
 let editingHostKey = 'favela';
 let chooseHostSelected = 0; // 0 = favela, 1 = maria
 let selectedCardIndex = 0; // 0 to 11
@@ -72,6 +73,7 @@ ipcRenderer.on('connection-status-update', (event, data) => {
     currentHost = data.host || null;
     updateTopBar();
     updateHomeHosts();
+    updateFooterHints();
     if (currentScreen === 'grid') {
         renderEditGrid();
     }
@@ -126,7 +128,8 @@ function ensureKeyMappingsStructure() {
 // ============================================================
 function setScreen(newScreen) {
     currentScreen = newScreen;
-    const isEditMode = (newScreen !== 'home');
+    // O modo de edição do ponto de vista do OS é: telas de edição OU tela home enquanto desconectado
+    const isEditMode = (newScreen !== 'home') || (connectionStatus !== 'connected');
 
     // Inform main process to mute OS-level global shortcuts from firing DMX
     try {
@@ -231,11 +234,12 @@ function updateTopBar() {
 }
 
 // ============================================================
-// 📌 Home Host Cards
+// 📌 Home Host Cards & Focus Management
 // ============================================================
 function updateHomeHosts() {
     const favelaCard = document.getElementById('home-host-favela');
     const mariaCard = document.getElementById('home-host-maria');
+    const btnGotoChoose = document.getElementById('btn-goto-choose-host');
     const favelaStatus = document.getElementById('home-host-status-favela');
     const mariaStatus = document.getElementById('home-host-status-maria');
     const favelaAddr = document.getElementById('live-host-addr-favela');
@@ -265,6 +269,12 @@ function updateHomeHosts() {
         mariaStatus.classList.add(isMariaActive ? 'connected' : 'disconnected');
         mariaStatus.textContent = isMariaActive ? 'ATIVO' : 'CONECTAR';
     }
+
+    // Gerenciamento visual do foco no Home (quando desconectado)
+    const isDisconnected = connectionStatus !== 'connected';
+    if (favelaCard) favelaCard.classList.toggle('focused', isDisconnected && homeSelectedIndex === 0);
+    if (mariaCard) mariaCard.classList.toggle('focused', isDisconnected && homeSelectedIndex === 1);
+    if (btnGotoChoose) btnGotoChoose.classList.toggle('focused', isDisconnected && homeSelectedIndex === 2);
 }
 
 // ============================================================
@@ -576,6 +586,23 @@ async function saveAllConfig() {
 }
 
 // ============================================================
+// 📌 Home Screen Confirmation / Actions
+// ============================================================
+function handleHomeConfirm() {
+    if (connectionStatus === 'connected') {
+        setScreen('choose-host');
+    } else {
+        if (homeSelectedIndex === 0) {
+            handleHostConnectionToggle('favela');
+        } else if (homeSelectedIndex === 1) {
+            handleHostConnectionToggle('maria');
+        } else if (homeSelectedIndex === 2) {
+            setScreen('choose-host');
+        }
+    }
+}
+
+// ============================================================
 // 📌 Host Connection / Toggle in Live Mode
 // ============================================================
 async function handleHostConnectionToggle(targetHostKey) {
@@ -589,6 +616,7 @@ async function handleHostConnectionToggle(targetHostKey) {
         connectionStatus = 'disconnected';
         updateTopBar();
         updateHomeHosts();
+        updateFooterHints();
         showToast(`Desconectado de ${hostName}.`, 'info');
         return;
     }
@@ -597,12 +625,19 @@ async function handleHostConnectionToggle(targetHostKey) {
     currentHost = hostToConnect;
     updateTopBar();
     updateHomeHosts();
+    updateFooterHints();
     showToast(`Conectando a ${hostName}...`, 'info');
 
     const result = await electronAPI.connectHost(hostToConnect);
     if (result && result.success) {
         currentHost = hostToConnect;
         connectionStatus = 'connected';
+        // Sincroniza o modo de operação Live (desativa edit mode para ativar envio de teclas)
+        try {
+            await electronAPI.setEditMode(false);
+        } catch (e) {
+            console.warn('Erro ao sincronizar edit mode após conectar:', e);
+        }
         showToast(`Conectado a ${hostName}!`, 'info');
     } else {
         connectionStatus = 'error';
@@ -610,6 +645,7 @@ async function handleHostConnectionToggle(targetHostKey) {
     }
     updateTopBar();
     updateHomeHosts();
+    updateFooterHints();
 }
 
 // ============================================================
@@ -640,21 +676,39 @@ function updateFooterHints() {
     if (!hints) return;
 
     if (currentScreen === 'home') {
-        hints.innerHTML = `
-            <div class="hint-item" id="hint-home-edit">
-                <span class="btn-badge btn-a">A</span> <span>Editar Mapeamento</span>
-            </div>
-            <div class="hint-item" id="hint-home-switch">
-                <span class="btn-badge btn-y">Y</span> <span>Alternar Host Live</span>
-            </div>
-            <div class="hint-item hint-static">
-                <span class="btn-badge">F1–F12</span> <span>Disparar Cenas Live</span>
-            </div>
-        `;
-        const btnEdit = document.getElementById('hint-home-edit');
-        const btnSwitch = document.getElementById('hint-home-switch');
-        if (btnEdit) btnEdit.addEventListener('click', () => setScreen('choose-host'));
-        if (btnSwitch) btnSwitch.addEventListener('click', () => handleHostConnectionToggle());
+        if (connectionStatus === 'connected') {
+            hints.innerHTML = `
+                <div class="hint-item" id="hint-home-edit">
+                    <span class="btn-badge btn-a">A</span> <span>Editar Mapeamento</span>
+                </div>
+                <div class="hint-item" id="hint-home-switch">
+                    <span class="btn-badge btn-y">Y</span> <span>Alternar Host Live</span>
+                </div>
+                <div class="hint-item hint-static">
+                    <span class="btn-badge">F1–F12</span> <span>Disparar Cenas Live</span>
+                </div>
+            `;
+            const btnEdit = document.getElementById('hint-home-edit');
+            const btnSwitch = document.getElementById('hint-home-switch');
+            if (btnEdit) btnEdit.addEventListener('click', () => setScreen('choose-host'));
+            if (btnSwitch) btnSwitch.addEventListener('click', () => handleHostConnectionToggle());
+        } else {
+            hints.innerHTML = `
+                <div class="hint-item hint-static">
+                    <span class="btn-badge">D-PAD (F1–F4)</span> <span>Navegar Seleção</span>
+                </div>
+                <div class="hint-item" id="hint-home-confirm">
+                    <span class="btn-badge btn-a">A</span> <span>Conectar / Editar</span>
+                </div>
+                <div class="hint-item" id="hint-home-switch">
+                    <span class="btn-badge btn-y">Y</span> <span>Alternar Host</span>
+                </div>
+            `;
+            const btnConfirm = document.getElementById('hint-home-confirm');
+            const btnSwitch = document.getElementById('hint-home-switch');
+            if (btnConfirm) btnConfirm.addEventListener('click', () => handleHomeConfirm());
+            if (btnSwitch) btnSwitch.addEventListener('click', () => handleHostConnectionToggle());
+        }
     } else if (currentScreen === 'choose-host') {
         hints.innerHTML = `
             <div class="hint-item hint-static">
@@ -877,27 +931,81 @@ function handleGlobalKeydown(e) {
     // 1. SCREEN: HOME (LIVE OPERATION MODE)
     // ==========================================
     if (currentScreen === 'home') {
-        const fKeyMatch = key.match(/^F([1-9]|1[0-2])$/);
-        if (fKeyMatch) {
-            e.preventDefault();
-            electronAPI.simulateFKey(key);
-            const mapping = currentConfig.keyMappings[currentHost] && currentConfig.keyMappings[currentHost][key];
-            const pDisp = mapping ? mapping.page + 1 : 1;
-            const sDisp = mapping ? mapping.scene + 1 : 1;
-            showToast(`${key} disparado -> Pág ${pDisp}, Cena ${sDisp}`, 'info');
-            return;
-        }
+        const isConnected = (connectionStatus === 'connected');
 
-        if (key === 'Enter' || code === 'KeyA') {
-            e.preventDefault();
-            setScreen('choose-host');
-            return;
-        }
+        if (isConnected) {
+            // Quando conectado: F1-F12 disparam cenas live via REST
+            const fKeyMatch = key.match(/^F([1-9]|1[0-2])$/);
+            if (fKeyMatch) {
+                e.preventDefault();
+                electronAPI.simulateFKey(key);
+                const mapping = currentConfig.keyMappings[currentHost] && currentConfig.keyMappings[currentHost][key];
+                const pDisp = mapping ? mapping.page + 1 : 1;
+                const sDisp = mapping ? mapping.scene + 1 : 1;
+                showToast(`${key} disparado -> Pág ${pDisp}, Cena ${sDisp}`, 'info');
+                return;
+            }
 
-        if (code === 'KeyY') {
-            e.preventDefault();
-            handleHostConnectionToggle();
-            return;
+            if (key === 'Enter' || code === 'KeyA') {
+                e.preventDefault();
+                setScreen('choose-host');
+                return;
+            }
+
+            if (code === 'KeyY') {
+                e.preventDefault();
+                handleHostConnectionToggle();
+                return;
+            }
+        } else {
+            // Quando desconectado: F1-F4 e Setas navegam na UI (0: Favela, 1: Maria, 2: Botão Editar)
+            if (key === 'F1' || key === 'ArrowLeft') {
+                e.preventDefault();
+                if (homeSelectedIndex === 1) {
+                    homeSelectedIndex = 0;
+                    updateHomeHosts();
+                }
+                return;
+            }
+
+            if (key === 'F3' || key === 'ArrowRight') {
+                e.preventDefault();
+                if (homeSelectedIndex === 0) {
+                    homeSelectedIndex = 1;
+                    updateHomeHosts();
+                }
+                return;
+            }
+
+            if (key === 'F2' || key === 'ArrowUp') {
+                e.preventDefault();
+                if (homeSelectedIndex === 2) {
+                    homeSelectedIndex = 0;
+                    updateHomeHosts();
+                }
+                return;
+            }
+
+            if (key === 'F4' || key === 'ArrowDown') {
+                e.preventDefault();
+                if (homeSelectedIndex === 0 || homeSelectedIndex === 1) {
+                    homeSelectedIndex = 2;
+                    updateHomeHosts();
+                }
+                return;
+            }
+
+            if (key === 'Enter' || code === 'KeyA') {
+                e.preventDefault();
+                handleHomeConfirm();
+                return;
+            }
+
+            if (code === 'KeyY') {
+                e.preventDefault();
+                handleHostConnectionToggle();
+                return;
+            }
         }
     }
 
@@ -1230,8 +1338,36 @@ function handleGamepadInput(gp) {
     const navDown = dpadDown || stickDown;
 
     if (currentScreen === 'home') {
-        if (btnA) setScreen('choose-host');
-        else if (btnY) handleHostConnectionToggle();
+        if (connectionStatus === 'connected') {
+            if (btnA) setScreen('choose-host');
+            else if (btnY) handleHostConnectionToggle();
+        } else {
+            if (navLeft) {
+                if (homeSelectedIndex === 1) {
+                    homeSelectedIndex = 0;
+                    updateHomeHosts();
+                }
+            } else if (navRight) {
+                if (homeSelectedIndex === 0) {
+                    homeSelectedIndex = 1;
+                    updateHomeHosts();
+                }
+            } else if (navUp) {
+                if (homeSelectedIndex === 2) {
+                    homeSelectedIndex = 0;
+                    updateHomeHosts();
+                }
+            } else if (navDown) {
+                if (homeSelectedIndex === 0 || homeSelectedIndex === 1) {
+                    homeSelectedIndex = 2;
+                    updateHomeHosts();
+                }
+            } else if (btnA) {
+                handleHomeConfirm();
+            } else if (btnY) {
+                handleHostConnectionToggle();
+            }
+        }
     } else if (currentScreen === 'choose-host') {
         if (navLeft) {
             chooseHostSelected = 0;

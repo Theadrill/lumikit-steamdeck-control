@@ -194,14 +194,15 @@ function updateConnectionStatus(status) {
 // Listener Global de Teclado (F1-F12)
 // ✅ CORREÇÃO 2: Usa o módulo globalShortcut do Electron para interceptar e bloquear teclas
 function registerGlobalKeyboardListener() {
-    // 💡 Ação: Usamos globalShortcut para interceptar teclas no nível do SO
-    
+    // Garante que atalhos anteriores sejam limpos antes de registrar novamente
+    globalShortcut.unregisterAll();
+
     // 1. Teclas de função (F1-F12)
     const functionKeys = [
-        'F1', 'F2', 'F3', 'F4', 'F5', 'F6', 
+        'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
         'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
     ];
-    
+
     try {
         // Itera sobre as teclas F para registrar e bloquear/executar ação
         functionKeys.forEach(key => {
@@ -222,20 +223,20 @@ function registerGlobalKeyboardListener() {
                 // O simples fato da função ser executada aqui já BLOQUEIA a propagação do evento no OS.
                 console.log(`Atalho global ${key} capturado e bloqueado. (isEditMode: ${isEditMode})`);
             });
-            
+
             if (!success) {
                 console.error(`❌ Falha ao registrar o atalho global ${key}`);
             }
         });
 
         // 2. Bloqueia atalhos comuns (Ctrl+R, F5, etc.) que você quer anular sempre.
-        const shortcutsToBlock = ['CommandOrControl+R', 'F5'];
+        const shortcutsToBlock = ['CommandOrControl+R'];
         shortcutsToBlock.forEach(key => {
              globalShortcut.register(key, () => {
                 console.log(`Atalho de sistema ${key} bloqueado.`);
             });
         });
-        
+
     } catch (error) {
         console.error("❌ Erro ao registrar globalShortcut:", error.message);
     }
@@ -346,7 +347,7 @@ function updateTrayMenu() {
 // Conecta a um host
 async function connectToHost(hostKey) {
     if (!config) {
-        updateConnectionStatus("error"); 
+        updateConnectionStatus("error");
         return { success: false, status: "error", host: null };
     }
 
@@ -355,8 +356,9 @@ async function connectToHost(hostKey) {
     const success = await testConnection(hostKey)
     if (success) {
         currentHost = hostKey
+        isEditMode = false; // Ao conectar com sucesso no Live, desativa o edit mode
         updateConnectionStatus("connected")
-        registerGlobalKeyboardListener() 
+        registerGlobalKeyboardListener()
     } else {
         updateConnectionStatus("error")
     }
