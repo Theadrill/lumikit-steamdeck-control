@@ -1,126 +1,266 @@
 <!DOCTYPE html>
-<html>
+<html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <title>Lumikit Steam Deck Control</title>
-    <link rel="stylesheet" href="styles.css"> 
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lumikit Steam Deck Control</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div id="app-container">
-        <header>
-            <nav id="tabs" class="tabs">
-                <button class="tab-button active" data-tab="control-tab">Controle</button>
-                <button class="tab-button" data-tab="config-tab">Configuração</button>
-            </nav>
-        </header>
 
-        <div id="status-bar" class="status-disconnected status-bar">
-            <span id="os-info"></span>
-            <span id="connection-status-text">Desconectado</span>
-        </div>
-
-        <div id="tab-content" class="tab-content">
-            <div id="control-tab" class="tab-page active">
-                <h1 class="app-title">Lumikit Steam Deck Control</h1>
-
-                <div class="host-selection">
-                    <button class="host-btn" data-host="favela" id="connect-favela" data-name="PC Favela Rodrigo">Conectar PC Favela Rodrigo</button>
-                    <button class="host-btn" data-host="maria" id="connect-maria" data-name="PC Maria Rodrigo">Conectar PC Maria Rodrigo</button>
-                </div>
-
-                <div class="action-buttons grid-fx">
-                    <button class="f-key-btn" data-key="F1">F1</button>
-                    <button class="f-key-btn" data-key="F2">F2</button>
-                    <button class="f-key-btn" data-key="F3">F3</button>
-                    <button class="f-key-btn" data-key="F4">F4</button>
-                    <button class="f-key-btn" data-key="F5">F5</button>
-                    <button class="f-key-btn" data-key="F6">F6</button>
-                    <button class="f-key-btn" data-key="F7">F7</button>
-                    <button class="f-key-btn" data-key="F8">F8</button>
-                    <button class="f-key-btn" data-key="F9">F9</button>
-                    <button class="f-key-btn" data-key="F10">F10</button>
-                    <button class="f-key-btn" data-key="F11">F11</button>
-                    <button class="f-key-btn" data-key="F12">F12</button>
-                </div>
-            </div>
-
-            <div id="config-tab" class="tab-page">
-                <h1 class="app-title">Configurações do Aplicativo</h1>
-                
-                <section class="config-section">
-                    <h2 class="config-subtitle">Configuração de Hosts</h2>
-                    <div id="host-config-container" class="host-config-container">
-                        
-                        <div class="host-config-item" data-host="favela">
-                            <h6>PC Favela Rodrigo</h6>
-                            <div class="host-input-grid">
-                                <div class="input-group">
-                                    <label for="favela-name" class="form-label">Nome:</label>
-                                    <input type="text" id="favela-name" data-field="name" class="form-input">
-                                </div>
-                                <div class="input-group">
-                                    <label for="favela-address" class="form-label">Endereço/IP:</label>
-                                    <input type="text" id="favela-address" data-field="address" class="form-input">
-                                </div>
-                                <div class="input-group">
-                                    <label for="favela-port" class="form-label">Porta:</label>
-                                    <input type="number" id="favela-port" data-field="port" min="1" max="65535" class="form-input">
-                                </div>
-                            </div>
-                            <div class="test-connection-area">
-                                <span class="test-status" id="favela-test-status"></span>
-                                <button class="test-connection-btn">Testar Conexão</button>
-                            </div>
-                        </div>
-
-                        <div class="host-config-item" data-host="maria">
-                            <h6>PC Maria Rodrigo</h6>
-                            <div class="host-input-grid">
-                                <div class="input-group">
-                                    <label for="maria-name" class="form-label">Nome:</label>
-                                    <input type="text" id="maria-name" data-field="name" class="form-input">
-                                </div>
-                                <div class="input-group">
-                                    <label for="maria-address" class="form-label">Endereço/IP:</label>
-                                    <input type="text" id="maria-address" data-field="address" class="form-input">
-                                </div>
-                                <div class="input-group">
-                                    <label for="maria-port" class="form-label">Porta:</label>
-                                    <input type="number" id="maria-port" data-field="port" min="1" max="65535" class="form-input">
-                                </div>
-                            </div>
-                            <div class="test-connection-area">
-                                <span class="test-status" id="maria-test-status"></span>
-                                <button class="test-connection-btn">Testar Conexão</button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
-                <section class="config-section">
-                    <h2 class="config-subtitle">Mapeamento de Teclas (F1-F12)</h2>
-                    
-                    <div class="key-mapping-selector">
-                        <label for="key-host-select">Host para Edição:</label>
-                        <select id="key-host-select" class="custom-select"></select>
-                    </div>
-
-                    <div id="key-mappings-container">
-                        <p class="text-secondary">Aguardando carregamento da configuração...</p>
-                    </div>
-
-                </section>
-
-                <div class="config-actions">
-                    <button class="save-btn" id="save-config-btn">SALVAR CONFIGURAÇÃO</button>
-                    <button class="reset-btn" id="reset-config-btn">RESETAR (Padrão)</button>
-                </div>
-                
-                <p id="config-message" class="message-area"></p>
-            </div>
-        </div>
+  <!-- Top Bar -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5">
+          <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/>
+        </svg>
+      </div>
+      <h1>Lumikit Deck Control</h1>
+      <span id="top-mode-pill" class="mode-pill live">MODO OPERAÇÃO (LIVE)</span>
     </div>
 
-    <script src="renderer.js"></script>
+    <div class="host-badge-top">
+      <span id="top-status-dot" class="status-dot connected"></span>
+      <span id="top-host-name">Conectado: <strong>PC Favela Rodrigo</strong></span>
+    </div>
+  </header>
+
+  <!-- Container de Telas -->
+  <div class="view-container">
+
+    <!-- ============================================================
+         TELA 1: HOME (#view-home - MODO OPERAÇÃO / LIVE)
+         ============================================================ -->
+    <div id="view-home" class="view-screen active">
+      <div class="home-hero">
+        <h2>Controle de Iluminação Live</h2>
+        <p>Host ativo em execução. Os botões F1–F12 disparam as cenas diretamente no Lumikit.</p>
+      </div>
+
+      <div class="hosts-grid" id="home-hosts-grid">
+        <div class="host-card active-host" id="home-host-favela" data-host="favela">
+          <div class="host-info">
+            <h3>PC FAVELA</h3>
+            <span id="live-host-addr-favela">pcrodrigoxeon : 5000</span>
+          </div>
+          <span class="host-status-badge connected" id="home-host-status-favela">ATIVO</span>
+        </div>
+
+        <div class="host-card" id="home-host-maria" data-host="maria">
+          <div class="host-info">
+            <h3>PC MARIA</h3>
+            <span id="live-host-addr-maria">pcmariarodrigo : 5000</span>
+          </div>
+          <span class="host-status-badge disconnected" id="home-host-status-maria">CONECTAR</span>
+        </div>
+      </div>
+
+      <div class="home-actions">
+        <button id="btn-goto-choose-host" class="big-edit-btn">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          EDITAR MAPEAMENTO DAS TECLAS (F1–F12)
+        </button>
+        <p class="live-notice">Ao entrar em edição, D-Pad/F1–F4 navegam pelos menus sem disparar cenas live.</p>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 1.5: SELEÇÃO DE QUAL HOST VAI SER EDITADO (#view-choose-host)
+         ============================================================ -->
+    <div id="view-choose-host" class="view-screen">
+      <div class="choose-host-title">
+        <h2>Qual Host Você Deseja Editar?</h2>
+        <p>Escolha qual computador terá seu mapa de cenas F1–F12 ou IP modificado.</p>
+      </div>
+
+      <div class="choose-host-grid" id="choose-hosts-grid">
+        <div class="choose-host-card focused" id="host-opt-favela" data-host="favela">
+          <div class="choose-host-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <h3>PC FAVELA</h3>
+          <span class="host-sub" id="choose-sub-favela">pcrodrigoxeon : 5000 (12 Teclas)</span>
+          <div class="choose-host-btn">EDITAR ESTE MAPA / IP</div>
+        </div>
+
+        <div class="choose-host-card" id="host-opt-maria" data-host="maria">
+          <div class="choose-host-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+              <line x1="8" y1="21" x2="16" y2="21"></line>
+              <line x1="12" y1="17" x2="12" y2="21"></line>
+            </svg>
+          </div>
+          <h3>PC MARIA</h3>
+          <span class="host-sub" id="choose-sub-maria">pcmariarodrigo : 5000 (12 Teclas)</span>
+          <div class="choose-host-btn">EDITAR ESTE MAPA / IP</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         TELA 2: EDIÇÃO GERAL (#view-edit-grid)
+         ============================================================ -->
+    <div id="view-edit-grid" class="view-screen">
+      <div class="edit-grid-header">
+        <div class="edit-host-info-block">
+          <div>
+            <div class="edit-target-label">Editando:</div>
+            <div class="edit-target-name" id="editing-host-title">PC Favela Rodrigo</div>
+          </div>
+          <div class="edit-target-ip-badge" id="editing-host-badge">pcrodrigoxeon:5000</div>
+        </div>
+
+        <div class="header-actions-right">
+          <button class="edit-address-btn" id="btn-open-host-modal">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="2" y1="12" x2="22" y2="12"></line>
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path>
+            </svg>
+            EDITAR IP / ENDEREÇO
+          </button>
+
+          <button class="switch-editing-host-btn" id="btn-switch-host">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M16 3h5v5M4 20L20.2 3.8M21 16v5h-5M15 15l5.1 5.1M4 4l5 5"></path>
+            </svg>
+            Trocar Host
+          </button>
+        </div>
+      </div>
+
+      <div class="cards-grid" id="edit-cards-container">
+        <!-- 12 Cards F1-F12 injetados dinamicamente via JS -->
+      </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL 1: EDITAR ENDEREÇO / IP (#host-address-modal-overlay)
+         ============================================================ -->
+    <div id="host-address-modal-overlay" class="host-address-modal-overlay">
+      <div class="host-address-modal">
+        <div class="modal-header">
+          <h3 id="host-modal-title">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+              <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+              <line x1="6" y1="6" x2="6.01" y2="6"></line>
+              <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+            Configurar Endereço do Host
+          </h3>
+          <span class="mode-pill edit">REDE LUMIKIT</span>
+        </div>
+
+        <div class="input-field-group">
+          <label for="input-host-name">Nome do Computador</label>
+          <input type="text" id="input-host-name" class="big-touch-input" placeholder="Ex: PC Favela">
+        </div>
+
+        <div class="input-row-grid">
+          <div class="input-field-group">
+            <label for="input-host-ip">Endereço IP ou Hostname (DNS)</label>
+            <input type="text" id="input-host-ip" class="big-touch-input" placeholder="Ex: 192.168.1.100 ou pcrodrigoxeon">
+          </div>
+          <div class="input-field-group">
+            <label for="input-host-port">Porta REST</label>
+            <input type="number" id="input-host-port" class="big-touch-input" placeholder="5000">
+          </div>
+        </div>
+
+        <button class="test-conn-btn" id="btn-test-connection">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+            <polyline points="22 4 12 14.01 9 11.01"></polyline>
+          </svg>
+          TESTAR CONEXÃO COM LUMIKIT
+        </button>
+
+        <div class="modal-actions">
+          <button class="modal-btn confirm" id="btn-save-host-address">
+            <span>SALVAR ENDEREÇO</span>
+          </button>
+          <button class="modal-btn cancel" id="btn-cancel-host-address">
+            <span>CANCELAR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============================================================
+         MODAL 2: AJUSTE DE CENA / PÁGINA (#card-modal-overlay)
+         ============================================================ -->
+    <div id="card-modal-overlay" class="card-modal-overlay">
+      <div class="card-modal">
+        <div class="modal-header">
+          <h3 id="modal-card-title">Configurar Tecla F1</h3>
+          <span class="mode-pill subedit">EDITANDO CENA</span>
+        </div>
+
+        <div class="modal-controls">
+          <div class="modal-control-row focused-row" id="row-modal-page">
+            <span class="modal-control-label">PÁGINA</span>
+            <div class="stepper-big">
+              <button class="step-btn-big" id="btn-page-dec">‹</button>
+              <span class="step-val-big" id="modal-page-val">1</span>
+              <button class="step-btn-big" id="btn-page-inc">›</button>
+            </div>
+          </div>
+
+          <div class="modal-control-row" id="row-modal-scene">
+            <span class="modal-control-label">CENA</span>
+            <div class="stepper-big">
+              <button class="step-btn-big" id="btn-scene-dec">‹</button>
+              <span class="step-val-big" id="modal-scene-val">1</span>
+              <button class="step-btn-big" id="btn-scene-inc">›</button>
+            </div>
+          </div>
+
+          <div class="input-field-group" id="row-modal-command">
+            <label for="input-card-command">Comando / Script Externo (.bat / .sh)</label>
+            <input type="text" id="input-card-command" class="big-touch-input" placeholder="Ex: cena10.sh ou strobe.bat (Opcional)">
+          </div>
+        </div>
+
+        <div class="modal-actions">
+          <button class="modal-btn confirm" id="btn-confirm-card">
+            <span>(A) CONFIRMAR</span>
+          </button>
+          <button class="modal-btn cancel" id="btn-cancel-card">
+            <span>(B) CANCELAR</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast de Feedback -->
+    <div id="toast" class="toast-msg">Mapeamento Salvo com Sucesso!</div>
+
+  </div>
+
+  <!-- Footer com Legendas Dinâmicas & Clicáveis -->
+  <footer>
+    <div class="gamepad-hints" id="footer-hints">
+      <!-- Injetado dinamicamente via renderer.js -->
+    </div>
+
+    <div class="footer-credits">
+      Steam Deck UI • Lumikit REST
+    </div>
+  </footer>
+
+  <script src="renderer.js"></script>
 </body>
 </html>

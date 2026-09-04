@@ -50,10 +50,13 @@ O layout do **Steam Input** no Steam Deck mapeia o direcional físico (D-Pad) pa
    - Manutenção do fallback DNS, cache de IP e chamadas REST `/services/edmx_change_scene/{page}/{scene}`.
    - Manutenção da execução de scripts externos (`.bat` / `.sh`) configurados para as teclas (F10–F12).
    - Manutenção do indexador humano (UI: 1-based, Config/REST: 0-based).
-2. **Ergonomia e Navegação Gamepad-First (com suporte a Mouse/Teclado)**:
+2. **Proibição de CSS Inline (Separação Limpa)**:
+   - **É PROIBIDO O USO DE CSS INLINE** nas tags HTML ou scripts JS (`style="..."` ou `.style.x = ...` dispersos).
+   - Toda e qualquer estilização visual deve residir no arquivo de estilos correspondente (`styles.css`), utilizando classes CSS semânticas e variáveis de tema (`:root`).
+3. **Ergonomia e Navegação Gamepad-First (com suporte a Mouse/Teclado)**:
    - D-Pad e botões de ação mapeados e responsivos com anéis de foco visual claros.
    - Compatibilidade total mantida para cliques de mouse e toques na tela.
-3. **Validação Contínua**: O desenvolvimento será feito em etapas isoladas com paradas críticas para teste direto no Steam Deck.
+4. **Validação Contínua**: O desenvolvimento será feito em etapas isoladas com paradas críticas para teste direto no Steam Deck.
 
 ---
 

@@ -26,6 +26,7 @@ let currentHost = null
 let connectionStatus = "disconnected"
 let isQuitting = false
 let resolvedHostCache = {}; // CACHE PARA ARMAZENAR IPs RESOLVIDOS
+let isEditMode = false; // Flag para pausar disparos de atalhos de hardware em Modo Edição
 
 // IPC para retornar SO atual para a interface (renderer)
 ipcMain.handle("get-os", () => (isWindows ? "windows" : isLinux ? "linux" : "outro"));
@@ -205,21 +206,21 @@ function registerGlobalKeyboardListener() {
         // Itera sobre as teclas F para registrar e bloquear/executar ação
         functionKeys.forEach(key => {
             const success = globalShortcut.register(key, () => {
-                // Lógica de Ação: Executa a função mapeada se estiver conectado
-                if (currentHost && config && config.keyMappings[currentHost]) { 
+                // Lógica de Ação: Executa a função mapeada se estiver conectado e NÃO estiver em Modo de Edição
+                if (!isEditMode && currentHost && config && config.keyMappings[currentHost]) {
                     const keyMap = config.keyMappings[currentHost];
                     const mapping = keyMap[key];
-                    
+
                     if (mapping) {
                         changeScene(mapping.page, mapping.scene); // Ação Principal
-                        
+
                         if (mapping.command) {
                             runCommand(mapping.command); // Comando Opcional
                         }
                     }
                 }
                 // O simples fato da função ser executada aqui já BLOQUEIA a propagação do evento no OS.
-                console.log(`Atalho global ${key} capturado e bloqueado.`);
+                console.log(`Atalho global ${key} capturado e bloqueado. (isEditMode: ${isEditMode})`);
             });
             
             if (!success) {
@@ -261,16 +262,17 @@ function runCommand(command) {
 // Cria janela principal
 function createMainWindow() {
     mainWindow = new BrowserWindow({
-        width: 800,
-        height: 700,
-        // ✅ CORREÇÃO 4: Inicia a janela visível
-        show: true, 
-        // ✅ CORREÇÃO 5: Garante que a janela apareça na barra de tarefas (Dock)
-        skipTaskbar: false, 
-        resizable: false,
+        width: 1280,
+        height: 800,
+        minWidth: 800,
+        minHeight: 600,
+        // ✅ Inicia a janela visível e adequada para 1280x800 do Steam Deck
+        show: true,
+        skipTaskbar: false,
+        resizable: true,
         webPreferences: {
             nodeIntegration: true,
-            contextIsolation: false, 
+            contextIsolation: false,
         },
         icon: path.join(__dirname, isWindows ? "icon.ico" : "icon.png"),
     })
@@ -406,12 +408,28 @@ ipcMain.handle("run-command", async (event, command) => {
         const adapted = isWindows ? command : command.replace(/\\.bat/g, ".sh");
         exec(adapted, { cwd: __dirname }, (error, stdout, stderr) => {
             if (error) {
-                dialog.showErrorBox("Erro", `Falha ao executar: ${error.message}`); 
+                dialog.showErrorBox("Erro", `Falha ao executar: ${error.message}`);
                 return reject(stderr);
             }
             resolve(stdout);
         });
     });
+});
+
+ipcMain.handle("set-edit-mode", (event, editMode) => {
+    isEditMode = !!editMode;
+    console.log(`Modo de Edição alterado para: ${isEditMode}`);
+    if (isEditMode) {
+        // Ao entrar em modo de edição, libera as teclas F1-F12 do atalho global do SO
+        // para que a janela do Chromium receba os eventos keydown para navegação D-Pad
+        stopGlobalKeyboardListener();
+    } else {
+        // Ao voltar para o Live Mode, reativa os atalhos globais para disparos DMX
+        if (currentHost && connectionStatus === "connected") {
+            registerGlobalKeyboardListener();
+        }
+    }
+    return { success: true, isEditMode };
 });
 
 // Inicialização
