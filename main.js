@@ -1,14 +1,14 @@
 // main.js
 
 // Módulos do Electron e outras dependências
-// ✅ CORREÇÃO 1: Adicionado 'globalShortcut' e REMOVIDA a dependência 'node-global-key-listener'
-const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, globalShortcut } = require("electron") 
+const { app, BrowserWindow, Tray, Menu, nativeImage, ipcMain, dialog, globalShortcut } = require("electron")
+const { GlobalKeyboardListener } = require("node-global-key-listener");
 const http = require("http")
 const path = require("path")
 const fsp = require("fs").promises
 const os = require("os");
-const dns = require("dns"); 
-const { exec } = require("child_process"); 
+const dns = require("dns");
+const { exec } = require("child_process");
 
 // Determina o Sistema Operacional
 const isWindows = os.platform() === "win32";
@@ -27,6 +27,7 @@ let connectionStatus = "disconnected"
 let isQuitting = false
 let resolvedHostCache = {}; // CACHE PARA ARMAZENAR IPs RESOLVIDOS
 let isEditMode = false; // Flag para pausar disparos de atalhos de hardware em Modo Edição
+let lowLevelKeyboardListener = null; // Listener de baixo nível no Linux/SteamOS (X11KeyServer)
 
 // IPC para retornar SO atual para a interface (renderer)
 ipcMain.handle("get-os", () => (isWindows ? "windows" : isLinux ? "linux" : "outro"));
@@ -192,44 +193,25 @@ function updateConnectionStatus(status) {
 }
 
 // Listener Global de Teclado (F1-F12)
-// ✅ CORREÇÃO 2: Usa o módulo globalShortcut do Electron para interceptar e bloquear teclas
+// Suporta tanto o globalShortcut do Electron quanto o listener de baixo nível (X11KeyServer)
 function registerGlobalKeyboardListener() {
     // Garante que atalhos anteriores sejam limpos antes de registrar novamente
-    globalShortcut.unregisterAll();
+    stopGlobalKeyboardListener();
 
-    // 1. Teclas de função (F1-F12)
+    // 1. Teclas de função (F1-F12) via Electron globalShortcut
     const functionKeys = [
         'F1', 'F2', 'F3', 'F4', 'F5', 'F6',
         'F7', 'F8', 'F9', 'F10', 'F11', 'F12'
     ];
 
     try {
-        // Itera sobre as teclas F para registrar e bloquear/executar ação
         functionKeys.forEach(key => {
-            const success = globalShortcut.register(key, () => {
-                // Lógica de Ação: Executa a função mapeada se estiver conectado e NÃO estiver em Modo de Edição
-                if (!isEditMode && currentHost && config && config.keyMappings[currentHost]) {
-                    const keyMap = config.keyMappings[currentHost];
-                    const mapping = keyMap[key];
-
-                    if (mapping) {
-                        changeScene(mapping.page, mapping.scene); // Ação Principal
-
-                        if (mapping.command) {
-                            runCommand(mapping.command); // Comando Opcional
-                        }
-                    }
-                }
-                // O simples fato da função ser executada aqui já BLOQUEIA a propagação do evento no OS.
-                console.log(`Atalho global ${key} capturado e bloqueado. (isEditMode: ${isEditMode})`);
+            globalShortcut.register(key, () => {
+                handleTriggerFKey(key);
             });
-
-            if (!success) {
-                console.error(`❌ Falha ao registrar o atalho global ${key}`);
-            }
         });
 
-        // 2. Bloqueia atalhos comuns (Ctrl+R, F5, etc.) que você quer anular sempre.
+        // Bloqueia atalhos comuns
         const shortcutsToBlock = ['CommandOrControl+R'];
         shortcutsToBlock.forEach(key => {
              globalShortcut.register(key, () => {
@@ -240,11 +222,63 @@ function registerGlobalKeyboardListener() {
     } catch (error) {
         console.error("❌ Erro ao registrar globalShortcut:", error.message);
     }
+
+    // 2. Listener de baixo nível (Linux / X11 / SteamOS Gaming Mode em background)
+    try {
+        if (!lowLevelKeyboardListener) {
+            lowLevelKeyboardListener = new GlobalKeyboardListener({
+                windows: {
+                    onError: (errorCode) => console.error("Keyboard Error:", errorCode),
+                    onInfo: (info) => console.info("Keyboard Info:", info)
+                }
+            });
+
+            lowLevelKeyboardListener.addListener((e, down) => {
+                if (e.state === 'DOWN') {
+                    const match = e.name && e.name.match(/^F(1[0-2]|[1-9])$/);
+                    if (match) {
+                        const key = e.name;
+                        handleTriggerFKey(key);
+                    }
+                }
+                return false;
+            });
+            console.log("⌨️ Listener de baixo nível (X11) iniciado para captura em background.");
+        }
+    } catch (llError) {
+        console.warn("⚠️ Aviso ao iniciar lowLevelKeyboardListener:", llError.message);
+    }
 }
 
-// ✅ CORREÇÃO 3: Desregistra todos os atalhos
+// Handler unificado de disparo de cena
+function handleTriggerFKey(key) {
+    if (currentHost && config && config.keyMappings[currentHost]) {
+        const keyMap = config.keyMappings[currentHost];
+        const mapping = keyMap[key];
+
+        if (mapping) {
+            changeScene(mapping.page, mapping.scene); // Ação Principal
+
+            if (mapping.command) {
+                runCommand(mapping.command); // Comando Opcional
+            }
+            console.log(`🎮 Tecla ${key} disparada com sucesso no Lumikit (${currentHost}).`);
+        }
+    }
+}
+
+// Desregistra todos os atalhos
 function stopGlobalKeyboardListener() {
-    globalShortcut.unregisterAll(); 
+    try {
+        globalShortcut.unregisterAll();
+    } catch (e) {}
+
+    if (lowLevelKeyboardListener) {
+        try {
+            lowLevelKeyboardListener.kill();
+            lowLevelKeyboardListener = null;
+        } catch (e) {}
+    }
     console.log("Atalhos globais desregistrados.");
 }
 

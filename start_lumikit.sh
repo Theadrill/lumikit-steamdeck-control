@@ -13,8 +13,10 @@ PROJECT_DIR="$SCRIPT_DIR"
 # Isso garante que o Electron saiba como se conectar ao GameScope.
 export GDK_BACKEND=wayland,x11
 
-# 🛑 CORREÇÃO CRÍTICA 2: Configuração do Display
-export DISPLAY=:0
+# 🛑 Garante que o DISPLAY use o display ativo do GameScope/XWayland se não fornecido
+if [ -z "$DISPLAY" ]; then
+    export DISPLAY=:0
+fi
 
 cd "$PROJECT_DIR" || exit 1
 
