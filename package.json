@@ -50,18 +50,9 @@
                     "arch": [
                         "x64"
                     ]
-                },
-                {
-                    "target": "nsis",
-                    "arch": [
-                        "x64"
-                    ]
                 }
             ],
             "icon": "icon.ico"
-        },
-        "portable": {
-            "artifactName": "${productName} Portable.${ext}"
         },
         "nsis": {
             "oneClick": false,
